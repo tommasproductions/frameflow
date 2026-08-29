@@ -38,6 +38,16 @@ interface StoredRecord {
 /*                              Estado em memória                             */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Remove o banco da versão anterior, que guardava tudo em uma chave do
+ * localStorage. Nada mais o lê, mas deixá-lo é o próprio risco descrito acima:
+ * dados de uma conta parados no navegador que a próxima pessoa vai usar.
+ * Uma linha resolve, e some sozinha quando ninguém mais tiver o resquício.
+ */
+if (typeof window !== 'undefined') {
+  window.localStorage.removeItem(STORAGE_KEY)
+}
+
 let cache: Database = structuredClone(EMPTY_DATABASE)
 
 const listeners = new Set<() => void>()
