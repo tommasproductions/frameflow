@@ -1,9 +1,9 @@
 import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
-import { supabase } from '@/lib/supabase'
+import { signupIsOpen, supabase } from '@/lib/supabase'
 
 type Mode = 'signin' | 'signup'
 
@@ -16,11 +16,27 @@ type Mode = 'signin' | 'signup'
  */
 export function LoginPage() {
   const [mode, setMode] = useState<Mode>('signin')
+  /**
+   * `null` enquanto a resposta do Supabase não chegou. Nesse intervalo nada é
+   * oferecido — melhor a opção aparecer meio segundo depois do que oferecer um
+   * cadastro que o servidor vai recusar.
+   */
+  const [canSignUp, setCanSignUp] = useState<boolean | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void signupIsOpen().then((open) => {
+      if (!cancelled) setCanSignUp(open)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   /**
    * O Supabase responde em inglês e com termos técnicos. Traduzir os casos que
@@ -37,6 +53,9 @@ export function LoginPage() {
     }
     if (lower.includes('password should be at least')) {
       return 'A senha precisa ter pelo menos 6 caracteres.'
+    }
+    if (lower.includes('signups not allowed') || lower.includes('signup is disabled')) {
+      return 'O cadastro está fechado. Peça suas credenciais a quem contratou o sistema.'
     }
     if (lower.includes('rate limit') || lower.includes('too many')) {
       return 'Muitas tentativas seguidas. Espere um minuto e tente de novo.'
@@ -150,20 +169,27 @@ export function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-ink-dim">
-          {mode === 'signin' ? 'Ainda não tem conta?' : 'Já tem uma conta?'}{' '}
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === 'signin' ? 'signup' : 'signin')
-              setError(null)
-              setNotice(null)
-            }}
-            className="font-medium text-ink underline-offset-2 hover:underline"
-          >
-            {mode === 'signin' ? 'Criar agora' : 'Entrar'}
-          </button>
-        </p>
+        {canSignUp === true ? (
+          <p className="mt-4 text-center text-sm text-ink-dim">
+            {mode === 'signin' ? 'Ainda não tem conta?' : 'Já tem uma conta?'}{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === 'signin' ? 'signup' : 'signin')
+                setError(null)
+                setNotice(null)
+              }}
+              className="font-medium text-ink underline-offset-2 hover:underline"
+            >
+              {mode === 'signin' ? 'Criar agora' : 'Entrar'}
+            </button>
+          </p>
+        ) : canSignUp === false ? (
+          <p className="mt-4 text-center text-sm text-ink-faint">
+            O acesso é liberado pela Tommas Productions. Fale com quem contratou o sistema
+            para receber suas credenciais.
+          </p>
+        ) : null}
       </div>
     </div>
   )

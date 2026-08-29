@@ -49,6 +49,29 @@ export const supabase = createClient(
   },
 )
 
+/**
+ * O cadastro público está aberto neste projeto?
+ *
+ * A resposta vem do próprio Supabase, não de uma configuração da aplicação.
+ * Duplicar essa decisão em duas fontes garantiria que uma hora elas
+ * divergissem — e a divergência ruim é a silenciosa: o botão de criar conta
+ * aparece, a pessoa preenche tudo e só então descobre que não pode.
+ *
+ * Na dúvida devolve `false`: esconder um cadastro que funciona é um
+ * aborrecimento; oferecer um que não funciona é um defeito.
+ */
+export async function signupIsOpen(): Promise<boolean> {
+  if (configError) return false
+  try {
+    const response = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: anonKey } })
+    if (!response.ok) return false
+    const settings = (await response.json()) as { disable_signup?: boolean }
+    return settings.disable_signup === false
+  } catch {
+    return false
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /*                        Conversão de nomes de coluna                        */
 /* -------------------------------------------------------------------------- */
