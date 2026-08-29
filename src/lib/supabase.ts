@@ -8,23 +8,46 @@ import { createClient } from '@supabase/supabase-js'
  * Security: sem sessão autenticada, ela não lê linha nenhuma. A chave que
  * ignora RLS é a `service_role`, e essa nunca pode chegar ao navegador.
  */
-const url = import.meta.env.VITE_SUPABASE_URL
+const rawUrl = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!url || !anonKey) {
-  throw new Error(
-    'Faltam VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY. ' +
-      'Copie .env.example para .env.local e preencha com os dados do projeto.',
-  )
+/**
+ * O painel do Supabase mostra tanto a URL do projeto quanto o endpoint REST,
+ * e colar o segundo é fácil. O cliente monta os caminhos sozinho, então
+ * `/rest/v1` no fim quebraria toda requisição — melhor tolerar e normalizar
+ * do que falhar com um erro que não explica nada.
+ */
+function normalizeUrl(value: string): string {
+  return value.trim().replace(/\/+$/, '').replace(/\/rest\/v1$/, '')
 }
 
-export const supabase = createClient(url, anonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+const url = rawUrl ? normalizeUrl(rawUrl) : ''
+
+/**
+ * Configuração ausente não derruba a aplicação.
+ *
+ * Este módulo é importado na inicialização; um `throw` aqui impede o React de
+ * montar e o resultado é uma tela preta, sem pista nenhuma do que houve. Em vez
+ * disso, sinalizamos o problema e deixamos a interface explicá-lo.
+ */
+export const configError: string | null =
+  !url || !anonKey
+    ? 'As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não chegaram a esta build.'
+    : null
+
+export const supabase = createClient(
+  // Valores de reserva só para o cliente poder ser construído. Nada é chamado:
+  // quando `configError` existe, a aplicação mostra a tela de erro e para aí.
+  url || 'https://indisponivel.supabase.co',
+  anonKey || 'indisponivel',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
   },
-})
+)
 
 /* -------------------------------------------------------------------------- */
 /*                        Conversão de nomes de coluna                        */
