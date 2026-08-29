@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, PanelLeft, Search } from 'lucide-react'
 
 import { usePeriod } from '@/app/period'
+import { AccountMenu } from '@/components/shared/AccountMenu'
 import { NotificationsMenu } from '@/components/shared/NotificationsMenu'
 import { QuickActions } from '@/components/shared/QuickActions'
 import { Button } from '@/components/ui/button'
@@ -123,6 +124,7 @@ export function Topbar({
 
       <NotificationsMenu />
       <QuickActions />
+      <AccountMenu />
     </header>
   )
 }

@@ -1,3 +1,4 @@
+import { enqueue } from '@/lib/persistence'
 import {
   EMPTY_DATABASE,
   SCHEMA_VERSION,
@@ -9,15 +10,19 @@ import { buildSeedDatabase } from '@/lib/seedData'
 import { generateId, now } from '@/lib/utils'
 
 /**
- * Camada de persistência do MVP.
+ * Estado da aplicação em memória, espelhando o banco do usuário.
  *
- * Tudo vive em uma única chave do localStorage, lida uma vez e mantida em
- * memória. As telas consomem via `useSyncExternalStore`, então cada escrita
- * substitui a referência do banco e notifica os assinantes.
+ * O Supabase é a fonte da verdade. Este módulo mantém uma cópia em memória para
+ * que as telas leiam de forma síncrona — `useSyncExternalStore` precisa disso — e
+ * empurra cada escrita para o banco através de `persistence`.
  *
- * A forma do banco é deliberadamente relacional — coleções planas ligadas por
- * id — para que a migração a um banco real seja uma troca deste arquivo, não
- * uma reescrita das telas.
+ * Nada é gravado no localStorage. Numa aplicação vendida a vários usuários, um
+ * cache local é passivo de vazar dados de uma conta para a seguinte que abrir o
+ * mesmo navegador. O custo é uma busca no carregamento; o benefício é não ter
+ * duas fontes de verdade nem lógica de conflito.
+ *
+ * A forma relacional — coleções planas ligadas por id — é a mesma de antes, o
+ * que permitiu trocar a persistência sem tocar nas telas.
  */
 
 export { STORAGE_KEY, SCHEMA_VERSION }
@@ -30,61 +35,10 @@ interface StoredRecord {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                            Leitura e normalização                          */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Garante que toda coleção exista mesmo se o JSON gravado for de uma versão
- * anterior do schema — evita telas quebrarem por uma chave ausente.
- */
-function normalize(raw: unknown): Database {
-  const input = (raw ?? {}) as Partial<Database>
-  const out = { ...EMPTY_DATABASE } as Database
-  for (const key of Object.keys(EMPTY_DATABASE) as (keyof Database)[]) {
-    if (key === 'meta') continue
-    const value = input[key]
-    out[key] = (Array.isArray(value) ? value : []) as never
-  }
-  out.meta = {
-    version: input.meta?.version ?? SCHEMA_VERSION,
-    seededAt: input.meta?.seededAt ?? null,
-    updatedAt: input.meta?.updatedAt ?? '',
-  }
-  return out
-}
-
-function readFromStorage(): Database | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return normalize(JSON.parse(raw))
-  } catch (error) {
-    console.error('[FrameFlow] Banco local corrompido; recriando a partir do seed.', error)
-    return null
-  }
-}
-
-function writeToStorage(db: Database): void {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(db))
-  } catch (error) {
-    console.error('[FrameFlow] Não foi possível gravar no localStorage.', error)
-  }
-}
-
-/* -------------------------------------------------------------------------- */
 /*                              Estado em memória                             */
 /* -------------------------------------------------------------------------- */
 
-let cache: Database = (() => {
-  const stored = readFromStorage()
-  if (stored) return stored
-  const seeded = buildSeedDatabase()
-  writeToStorage(seeded)
-  return seeded
-})()
+let cache: Database = structuredClone(EMPTY_DATABASE)
 
 const listeners = new Set<() => void>()
 
@@ -110,32 +64,35 @@ export function getCollection<K extends CollectionKey>(key: K): Database[K] {
   return cache[key]
 }
 
-/** Substitui o banco inteiro, persiste e notifica. */
-export function setDatabase(next: Database): void {
-  cache = { ...next, meta: { ...next.meta, updatedAt: now() } }
-  writeToStorage(cache)
+/**
+ * Instala o banco vindo do servidor, sem devolvê-lo ao servidor.
+ *
+ * Chamado no login. Diferente de `setDatabase` justamente por não enfileirar
+ * escrita: reenviar o que acabou de ser lido seria trabalho inútil e uma
+ * chance a mais de corromper dados bons.
+ */
+export function installDatabase(db: Database): void {
+  cache = db
   emit()
 }
 
-/** Aplica uma transformação imutável ao banco. */
-export function mutate(recipe: (db: Database) => Database): void {
-  setDatabase(recipe(cache))
+/** Esvazia a memória ao encerrar a sessão. Não toca no banco. */
+export function clearSession(): void {
+  cache = structuredClone(EMPTY_DATABASE)
+  emit()
 }
 
-/** Substitui uma coleção inteira. */
-export function setCollection<K extends CollectionKey>(key: K, items: Database[K]): void {
-  mutate((db) => ({ ...db, [key]: items }))
+/** Substitui o banco inteiro — local e remoto. */
+export function setDatabase(next: Database): void {
+  cache = { ...next, meta: { ...next.meta, updatedAt: now() } }
+  emit()
+  enqueue({ kind: 'replaceAll', db: cache })
 }
 
-// Mantém abas abertas em sincronia: o evento `storage` só dispara nas outras.
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if (event.key !== STORAGE_KEY) return
-    const incoming = readFromStorage()
-    if (!incoming) return
-    cache = incoming
-    emit()
-  })
+/** Aplica uma transformação imutável, sem sincronizar. Uso interno. */
+function mutateLocal(recipe: (db: Database) => Database): void {
+  cache = recipe(cache)
+  emit()
 }
 
 /* -------------------------------------------------------------------------- */
@@ -147,6 +104,10 @@ export type Draft<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { id?: string
 
 /**
  * Fábrica de operações CRUD tipadas para uma coleção.
+ *
+ * Cada operação faz duas coisas: altera o cache e notifica (a tela responde na
+ * hora) e enfileira a escrita correspondente (o banco alcança depois). É o que
+ * mantém a interface instantânea sem abrir mão de persistir.
  *
  * `idPrefix` deixa os ids legíveis durante o desenvolvimento (`lead_m8x2…`) sem
  * que nenhuma lógica dependa desse formato.
@@ -174,21 +135,23 @@ export function collection<K extends CollectionKey>(key: K, idPrefix: string) {
 
   function create(draft: Draft<Item>): Item {
     const item = build(draft, now())
-    mutate((db) => ({ ...db, [key]: [...(db[key] as Item[]), item] }))
+    mutateLocal((db) => ({ ...db, [key]: [...(db[key] as Item[]), item] }))
+    enqueue({ kind: 'upsert', key, rows: [item as object] })
     return item
   }
 
-  /** Cria vários de uma vez — uma única escrita e uma única notificação. */
+  /** Cria vários de uma vez — uma única notificação e uma única ida ao banco. */
   function createMany(drafts: Draft<Item>[]): Item[] {
     const timestamp = now()
     const items = drafts.map((draft) => build(draft, timestamp))
-    mutate((db) => ({ ...db, [key]: [...(db[key] as Item[]), ...items] }))
+    mutateLocal((db) => ({ ...db, [key]: [...(db[key] as Item[]), ...items] }))
+    enqueue({ kind: 'upsert', key, rows: items as object[] })
     return items
   }
 
   function update(id: string, patch: Partial<Item>): Item | undefined {
     let updated: Item | undefined
-    mutate((db) => ({
+    mutateLocal((db) => ({
       ...db,
       [key]: (db[key] as Item[]).map((item) => {
         if ((item as StoredRecord).id !== id) return item
@@ -196,22 +159,30 @@ export function collection<K extends CollectionKey>(key: K, idPrefix: string) {
         return updated
       }),
     }))
+    if (updated) {
+      enqueue({ kind: 'upsert', key, rows: [updated as object] })
+    }
     return updated
   }
 
   function remove(id: string): void {
-    mutate((db) => ({
+    mutateLocal((db) => ({
       ...db,
       [key]: (db[key] as Item[]).filter((item) => (item as StoredRecord).id !== id),
     }))
+    enqueue({ kind: 'delete', key, ids: [id] })
   }
 
   /** Remove todos os registros que satisfazem o predicado. */
   function removeWhere(predicate: (item: Item) => boolean): void {
-    mutate((db) => ({
+    const doomed = all().filter(predicate).map((item) => (item as StoredRecord).id)
+    if (doomed.length === 0) return
+
+    mutateLocal((db) => ({
       ...db,
       [key]: (db[key] as Item[]).filter((item) => !predicate(item)),
     }))
+    enqueue({ kind: 'delete', key, ids: doomed })
   }
 
   return { key, all, byId, create, createMany, update, remove, removeWhere }
@@ -235,19 +206,44 @@ export const notificationsStore = collection('notifications', 'ntf')
 /*                            Manutenção dos dados                            */
 /* -------------------------------------------------------------------------- */
 
-/** Recarrega os dados demonstrativos, descartando o que existir. */
+/**
+ * Carrega os dados demonstrativos, descartando o que existir.
+ *
+ * Deixou de rodar sozinho: conta nova nasce vazia, como deve ser. Isto agora é
+ * um botão, útil para conhecer o sistema ou demonstrá-lo a alguém.
+ */
 export function resetToSeed(): void {
   setDatabase(buildSeedDatabase())
 }
 
-/** Esvazia o banco, mantendo o schema. */
+/** Esvazia o banco do usuário, mantendo o schema. */
 export function clearDatabase(): void {
-  setDatabase(structuredClone({ ...EMPTY_DATABASE }))
+  setDatabase(structuredClone(EMPTY_DATABASE))
 }
 
 /** JSON formatado do banco, para backup manual. */
 export function exportDatabase(): string {
   return JSON.stringify(cache, null, 2)
+}
+
+/**
+ * Garante que toda coleção exista mesmo se o JSON for de uma versão anterior
+ * do schema — evita telas quebrarem por uma chave ausente.
+ */
+function normalize(raw: unknown): Database {
+  const input = (raw ?? {}) as Partial<Database>
+  const out = { ...EMPTY_DATABASE } as Database
+  for (const key of Object.keys(EMPTY_DATABASE) as (keyof Database)[]) {
+    if (key === 'meta') continue
+    const value = input[key]
+    out[key] = (Array.isArray(value) ? value : []) as never
+  }
+  out.meta = {
+    version: input.meta?.version ?? SCHEMA_VERSION,
+    seededAt: input.meta?.seededAt ?? null,
+    updatedAt: input.meta?.updatedAt ?? '',
+  }
+  return out
 }
 
 /** Restaura um backup. Lança se o JSON for inválido. */

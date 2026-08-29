@@ -20,7 +20,6 @@ import {
   exportDatabase,
   importDatabase,
   resetToSeed,
-  STORAGE_KEY,
 } from '@/lib/store'
 import { formatDateTime, formatNumber } from '@/lib/utils'
 
@@ -72,11 +71,9 @@ export function SettingsPage() {
             <div>
               <CardTitle>Dados</CardTitle>
               <CardDescription>
-                Tudo é gravado no navegador, na chave{' '}
-                <code className="rounded-sm bg-hover px-1 py-0.5 font-mono text-xs text-ink-dim">
-                  {STORAGE_KEY}
-                </code>
-                . Nada sai deste dispositivo.
+                Seus dados ficam no banco da sua conta, acessíveis de qualquer
+                dispositivo em que você entrar. Nenhuma outra conta enxerga estes
+                registros — o isolamento é aplicado pelo próprio banco.
               </CardDescription>
             </div>
           </CardHeader>
@@ -129,8 +126,9 @@ export function SettingsPage() {
                 </Button>
               </div>
               <p className="text-xs text-ink-faint">
-                Recarregar substitui o que existe hoje pelo conjunto de demonstração original.
-                Exporte um backup antes se quiser guardar o estado atual.
+                Sua conta começa vazia. Recarregar preenche com o conjunto de demonstração —
+                útil para conhecer o sistema ou mostrá-lo a alguém — e substitui o que existir
+                hoje. Exporte um backup antes se quiser guardar o estado atual.
               </p>
             </div>
           </CardContent>
@@ -175,7 +173,7 @@ export function SettingsPage() {
           </DialogHeader>
           <DialogBody className="text-sm text-ink-dim">
             {pending === 'clear'
-              ? 'O banco local ficará vazio. Todos os leads, clientes, projetos, vídeos e lançamentos serão removidos deste navegador.'
+              ? 'Sua conta ficará vazia. Todos os leads, clientes, projetos, vídeos e lançamentos serão apagados do banco, em todos os dispositivos.'
               : 'Os registros atuais serão substituídos pelo conjunto demonstrativo original — 5 clientes, 8 projetos, 24 vídeos e 18 leads.'}
           </DialogBody>
           <DialogFooter>
