@@ -1,8 +1,8 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import { signupIsOpen, supabase } from '@/lib/supabase'
 
 type Mode = 'signin' | 'signup'
@@ -10,7 +10,12 @@ type Mode = 'signin' | 'signup'
 /**
  * Entrada do sistema.
  *
- * Login e cadastro dividem a mesma tela porque os campos são os mesmos e
+ * Preto absoluto e branco puro, sem os cinzas do resto da aplicação. É a única
+ * tela que alguém vê antes de conhecer o produto, e o contraste máximo carrega
+ * o peso que aqui não vem de dado nenhum — não há métrica, gráfico ou lista
+ * para dar hierarquia à página.
+ *
+ * Login e cadastro dividem a mesma tela porque os campos são idênticos e
  * alternar é mais barato que navegar. O modo só muda o texto e qual método do
  * Supabase é chamado.
  */
@@ -107,27 +112,35 @@ export function LoginPage() {
     }
   }
 
+  const signup = mode === 'signup'
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-canvas p-4">
-      <div className="page-enter w-full max-w-sm">
-        <div className="mb-6 flex items-center gap-2.5">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-sm font-bold text-on-accent">
+    /*
+     * `bg-black` e `text-white` literais, não os tokens do tema. A tela de
+     * entrada é a exceção deliberada ao sistema de cores: enquanto o app usa
+     * quase-preto para as superfícies não brigarem entre si, aqui só existe
+     * uma superfície.
+     */
+    <div className="flex min-h-screen items-center justify-center bg-black p-6 text-white">
+      <div className="page-enter w-full max-w-[340px]">
+        <div className="mb-8 flex items-center gap-2.5">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-white text-sm font-bold text-black">
             F
           </span>
-          <span className="text-lg font-semibold tracking-tight text-ink">FrameFlow</span>
+          <span className="text-lg font-semibold tracking-tight">FrameFlow</span>
         </div>
 
-        <h1 className="text-xl font-semibold text-ink">
-          {mode === 'signin' ? 'Entrar na sua conta' : 'Criar uma conta'}
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {signup ? 'Criar conta' : 'Entrar'}
         </h1>
-        <p className="mt-1 text-sm text-ink-dim">
-          {mode === 'signin'
-            ? 'Gestão de clientes, produção e financeiro para editores de vídeo.'
-            : 'Sua conta começa vazia — os dados são só seus.'}
+        <p className="mt-1.5 text-sm text-white/55">
+          {signup
+            ? 'Sua conta começa vazia — os dados são só seus.'
+            : 'Gestão de clientes, produção e financeiro para editores de vídeo.'}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-3">
-          <Field label="E-mail">
+        <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+          <Field label="E-mail" className="[&>label]:text-white/70">
             <Input
               type="email"
               autoComplete="email"
@@ -135,59 +148,81 @@ export function LoginPage() {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="voce@exemplo.com"
               autoFocus
+              className="h-10 border-white/20 bg-transparent text-white placeholder:text-white/40 hover:border-white/35 focus-visible:border-white focus-visible:ring-white/25"
             />
           </Field>
 
           <Field
             label="Senha"
-            hint={mode === 'signup' ? 'Pelo menos 6 caracteres.' : undefined}
+            hint={signup ? 'Pelo menos 6 caracteres.' : undefined}
+            className="[&>label]:text-white/70 [&>p]:text-white/40"
           >
             <Input
               type="password"
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              autoComplete={signup ? 'new-password' : 'current-password'}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="••••••••"
+              className="h-10 border-white/20 bg-transparent text-white placeholder:text-white/40 hover:border-white/35 focus-visible:border-white focus-visible:ring-white/25"
             />
           </Field>
 
           {error ? (
-            <p role="alert" className="rounded-md bg-danger/10 px-2.5 py-2 text-sm text-danger">
+            <p
+              role="alert"
+              className="border-l-2 border-white pl-2.5 text-sm leading-snug text-white/85"
+            >
               {error}
             </p>
           ) : null}
 
           {notice ? (
-            <p role="status" className="rounded-md bg-success/10 px-2.5 py-2 text-sm text-success">
+            <p
+              role="status"
+              className="border-l-2 border-white/40 pl-2.5 text-sm leading-snug text-white/70"
+            >
               {notice}
             </p>
           ) : null}
 
-          <Button type="submit" variant="primary" disabled={busy} className="w-full">
-            {busy ? <Loader2 className="animate-spin" /> : null}
-            {mode === 'signin' ? 'Entrar' : 'Criar conta'}
-          </Button>
+          {/*
+            Botão branco sobre preto — o único bloco cheio da tela, e por isso
+            o destino óbvio do olho.
+          */}
+          <button
+            type="submit"
+            disabled={busy}
+            className={cn(
+              'flex h-10 w-full items-center justify-center gap-2 rounded-md bg-white text-sm font-semibold text-black',
+              'transition-opacity duration-150 hover:opacity-90',
+              'focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+            )}
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+            {signup ? 'Criar conta' : 'Entrar'}
+          </button>
         </form>
 
         {canSignUp === true ? (
-          <p className="mt-4 text-center text-sm text-ink-dim">
-            {mode === 'signin' ? 'Ainda não tem conta?' : 'Já tem uma conta?'}{' '}
+          <p className="mt-6 text-sm text-white/55">
+            {signup ? 'Já tem uma conta?' : 'Ainda não tem conta?'}{' '}
             <button
               type="button"
               onClick={() => {
-                setMode(mode === 'signin' ? 'signup' : 'signin')
+                setMode(signup ? 'signin' : 'signup')
                 setError(null)
                 setNotice(null)
               }}
-              className="font-medium text-ink underline-offset-2 hover:underline"
+              className="font-medium text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
             >
-              {mode === 'signin' ? 'Criar agora' : 'Entrar'}
+              {signup ? 'Entrar' : 'Criar agora'}
             </button>
           </p>
         ) : canSignUp === false ? (
-          <p className="mt-4 text-center text-sm text-ink-faint">
-            O acesso é liberado pela Tommas Productions. Fale com quem contratou o sistema
-            para receber suas credenciais.
+          <p className="mt-6 text-sm leading-relaxed text-white/50">
+            O acesso é liberado pela Tommas Productions. Fale com quem contratou o sistema para
+            receber suas credenciais.
           </p>
         ) : null}
       </div>
