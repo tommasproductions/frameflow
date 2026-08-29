@@ -13,7 +13,13 @@ import { supabase } from '@/lib/supabase'
  * da conta anterior precisam sair da memória antes que qualquer tela renderize.
  */
 
-export type AuthState = 'checking' | 'signed-out' | 'loading-data' | 'ready' | 'failed'
+export type AuthState =
+  | 'checking'
+  | 'signed-out'
+  | 'recovering'
+  | 'loading-data'
+  | 'ready'
+  | 'failed'
 
 interface AuthValue {
   state: AuthState
@@ -23,6 +29,8 @@ interface AuthValue {
   error: string | null
   signOut: () => Promise<void>
   retry: () => void
+  /** Encerra a troca de senha e segue para o carregamento dos dados. */
+  finishRecovery: () => void
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
@@ -37,8 +45,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // no armazenamento do navegador e as trocas posteriores (login, logout,
   // renovação de token). O evento inicial chega sozinho.
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next)
+
+      /*
+       * O link de troca de senha abre uma sessão de verdade. Sem tratar este
+       * evento à parte, a pessoa entraria direto no sistema e nunca chegaria a
+       * definir a senha nova — continuaria sem saber a própria senha, e o link
+       * do e-mail já teria sido gasto.
+       */
+      if (event === 'PASSWORD_RECOVERY') {
+        setState('recovering')
+        return
+      }
+
       setState(next ? 'loading-data' : 'signed-out')
     })
     return () => data.subscription.unsubscribe()
@@ -85,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState('loading-data')
       setAttempt((n) => n + 1)
     },
+    finishRecovery: () => setState('loading-data'),
   }
 
   return <AuthContext value={value}>{children}</AuthContext>

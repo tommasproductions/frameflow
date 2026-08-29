@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '@/app/auth'
 import { router } from '@/app/routes'
 import { Button } from '@/components/ui/button'
 import { LoginPage } from '@/pages/auth/LoginPage'
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { configError } from '@/lib/supabase'
 
 export function App() {
@@ -63,6 +64,7 @@ function AuthGate() {
   const { state, error, retry, signOut } = useAuth()
 
   if (state === 'signed-out') return <LoginPage />
+  if (state === 'recovering') return <ResetPasswordPage />
 
   if (state === 'checking' || state === 'loading-data') {
     return (

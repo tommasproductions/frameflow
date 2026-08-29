@@ -5,7 +5,7 @@ import { Field, Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { signupIsOpen, supabase } from '@/lib/supabase'
 
-type Mode = 'signin' | 'signup'
+type Mode = 'signin' | 'signup' | 'recover'
 
 /**
  * Entrada do sistema.
@@ -65,6 +65,17 @@ export function LoginPage() {
     if (lower.includes('rate limit') || lower.includes('too many')) {
       return 'Muitas tentativas seguidas. Espere um minuto e tente de novo.'
     }
+    /*
+     * Sem SMTP próprio, o remetente embutido do Supabase recusa endereços que
+     * não sejam da equipe do projeto — e a recusa vem como "endereço inválido",
+     * que joga a culpa em quem digitou. A mensagem aponta para a causa real.
+     */
+    if (lower.includes('is invalid') && lower.includes('email address')) {
+      return 'Não foi possível enviar para este endereço. O envio de e-mails ainda não está configurado no sistema.'
+    }
+    if (lower.includes('error sending') || lower.includes('smtp')) {
+      return 'O envio de e-mails ainda não está configurado. Peça a troca de senha a quem administra o sistema.'
+    }
     return message
   }
 
@@ -73,14 +84,33 @@ export function LoginPage() {
     setError(null)
     setNotice(null)
 
-    if (!email.trim() || !password) {
-      setError('Preencha e-mail e senha.')
+    if (!email.trim()) {
+      setError('Preencha o e-mail.')
+      return
+    }
+    if (mode !== 'recover' && !password) {
+      setError('Preencha a senha.')
       return
     }
 
     setBusy(true)
     try {
-      if (mode === 'signup') {
+      if (mode === 'recover') {
+        // `redirectTo` precisa constar na lista de URLs permitidas do Supabase,
+        // senão o link do e-mail leva ao site deles em vez de voltar para cá.
+        const { error: cause } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/`,
+        })
+        if (cause) throw cause
+
+        /*
+         * A confirmação é a mesma exista a conta ou não. Dizer "e-mail não
+         * cadastrado" entregaria a qualquer um a lista de quem é cliente.
+         */
+        setNotice(
+          `Se houver uma conta para ${email.trim()}, o link de troca de senha chega em instantes. Confira também o spam.`,
+        )
+      } else if (mode === 'signup') {
         const { data, error: cause } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -113,6 +143,14 @@ export function LoginPage() {
   }
 
   const signup = mode === 'signup'
+  const recover = mode === 'recover'
+
+  const titulo = recover ? 'Trocar senha' : signup ? 'Criar conta' : 'Entrar'
+  const subtitulo = recover
+    ? 'Informe seu e-mail e enviaremos um link para definir uma senha nova.'
+    : signup
+      ? 'Sua conta começa vazia — os dados são só seus.'
+      : 'Gestão de clientes, produção e financeiro para editores de vídeo.'
 
   return (
     /*
@@ -130,14 +168,8 @@ export function LoginPage() {
           <span className="text-lg font-semibold tracking-tight">FrameFlow</span>
         </div>
 
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {signup ? 'Criar conta' : 'Entrar'}
-        </h1>
-        <p className="mt-1.5 text-sm text-white/55">
-          {signup
-            ? 'Sua conta começa vazia — os dados são só seus.'
-            : 'Gestão de clientes, produção e financeiro para editores de vídeo.'}
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
+        <p className="mt-1.5 text-sm text-white/55">{subtitulo}</p>
 
         <form onSubmit={handleSubmit} className="mt-7 space-y-4">
           <Field label="E-mail" className="[&>label]:text-white/70">
@@ -152,20 +184,23 @@ export function LoginPage() {
             />
           </Field>
 
-          <Field
-            label="Senha"
-            hint={signup ? 'Pelo menos 6 caracteres.' : undefined}
-            className="[&>label]:text-white/70 [&>p]:text-white/40"
-          >
-            <Input
-              type="password"
-              autoComplete={signup ? 'new-password' : 'current-password'}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="••••••••"
-              className="h-10 border-white/20 bg-transparent text-white placeholder:text-white/40 hover:border-white/35 focus-visible:border-white focus-visible:ring-white/25"
-            />
-          </Field>
+          {/* Na recuperação só o e-mail importa — pedir senha ali confundiria. */}
+          {recover ? null : (
+            <Field
+              label="Senha"
+              hint={signup ? 'Pelo menos 6 caracteres.' : undefined}
+              className="[&>label]:text-white/70 [&>p]:text-white/40"
+            >
+              <Input
+                type="password"
+                autoComplete={signup ? 'new-password' : 'current-password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••"
+                className="h-10 border-white/20 bg-transparent text-white placeholder:text-white/40 hover:border-white/35 focus-visible:border-white focus-visible:ring-white/25"
+              />
+            </Field>
+          )}
 
           {error ? (
             <p
@@ -200,11 +235,40 @@ export function LoginPage() {
             )}
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            {signup ? 'Criar conta' : 'Entrar'}
+            {recover ? 'Enviar link' : signup ? 'Criar conta' : 'Entrar'}
           </button>
         </form>
 
-        {canSignUp === true ? (
+        {/* Sem este atalho, quem esquece a senha não tem por onde começar. */}
+        <div className="mt-4">
+          {recover ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signin')
+                setError(null)
+                setNotice(null)
+              }}
+              className="text-sm text-white/55 underline decoration-white/25 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
+            >
+              Voltar para o login
+            </button>
+          ) : mode === 'signin' ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMode('recover')
+                setError(null)
+                setNotice(null)
+              }}
+              className="text-sm text-white/55 underline decoration-white/25 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
+            >
+              Esqueci minha senha
+            </button>
+          ) : null}
+        </div>
+
+        {recover ? null : canSignUp === true ? (
           <p className="mt-6 text-sm text-white/55">
             {signup ? 'Já tem uma conta?' : 'Ainda não tem conta?'}{' '}
             <button
