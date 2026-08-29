@@ -59,33 +59,38 @@ export const TONE_FILL: Record<Tone, string> = {
   neutral: 'bg-ink-faint',
 }
 
-/** Valores hex — Recharts e SVG não leem classes do Tailwind. */
+/**
+ * Valores hex — Recharts e SVG não leem classes do Tailwind.
+ *
+ * Precisa espelhar os tokens de `index.css`. Não há como o TypeScript garantir
+ * isso, então mexer num lado pede conferir o outro.
+ */
 export const TONE_HEX: Record<Tone, string> = {
-  success: '#00B894',
-  warning: '#FDCB6E',
-  danger: '#FF6B6B',
-  info: '#74B9FF',
-  accent: '#6C5CE7',
-  neutral: '#5C6378',
+  success: '#3FB950',
+  warning: '#D29922',
+  danger: '#F85149',
+  info: '#8B8B93',
+  accent: '#FAFAFA',
+  neutral: '#7E7E87',
 }
 
 /** Cores cruas do tema, para quando um componente precisa do hex. */
 export const THEME_HEX = {
-  canvas: '#0F1117',
-  surface: '#161922',
-  card: '#1C1F2E',
-  hover: '#252836',
-  line: '#2A2D3A',
-  lineActive: '#3B3F52',
-  ink: '#F1F1F4',
-  inkDim: '#9CA3B4',
-  inkFaint: '#5C6378',
-  accent: '#6C5CE7',
-  accentHover: '#7C6FF7',
-  success: '#00B894',
-  warning: '#FDCB6E',
-  danger: '#FF6B6B',
-  info: '#74B9FF',
+  canvas: '#0A0A0B',
+  surface: '#101011',
+  card: '#151517',
+  hover: '#1E1E21',
+  line: '#25252A',
+  lineActive: '#3A3A41',
+  ink: '#FAFAFA',
+  inkDim: '#A1A1A6',
+  inkFaint: '#7E7E87',
+  accent: '#FAFAFA',
+  accentHover: '#FFFFFF',
+  success: '#3FB950',
+  warning: '#D29922',
+  danger: '#F85149',
+  info: '#8B8B93',
 } as const
 
 /* -------------------------------------------------------------------------- */

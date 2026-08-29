@@ -177,7 +177,7 @@ export function ClientsPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Clientes"
         description="Carteira, rentabilidade e situação de cada conta."
@@ -189,7 +189,7 @@ export function ClientsPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Clientes ativos"
           value={totals.active}
@@ -255,7 +255,7 @@ export function ClientsPage() {
           onAction={clients.length === 0 ? () => setFormOpen(true) : undefined}
         />
       ) : view === 'cards' ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((client) => (
             <ClientCard
               key={client.id}

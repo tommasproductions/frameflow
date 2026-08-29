@@ -38,7 +38,7 @@ export function Dashboard() {
   const profitIsNegative = data.cash.profit < 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Dashboard"
         description={`Visão geral de ${label.toLowerCase()}.`}
@@ -61,7 +61,7 @@ export function Dashboard() {
       />
 
       {/* Linha financeira do mês selecionado. */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           label="Receita recebida"
           value={data.cash.received}
@@ -111,7 +111,7 @@ export function Dashboard() {
       </section>
 
       {/* Linha operacional. */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Leads novos no mês"
           value={data.counts.newLeads}
@@ -145,7 +145,7 @@ export function Dashboard() {
       </section>
 
       {/* Séries do semestre. */}
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <div>
@@ -172,7 +172,7 @@ export function Dashboard() {
       </section>
 
       {/* Funil e produção. */}
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <div>
@@ -209,7 +209,7 @@ export function Dashboard() {
       </section>
 
       {/* Listas de ação. */}
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Próximos prazos</CardTitle>
@@ -317,7 +317,7 @@ export function Dashboard() {
       </section>
 
       {/* Cobranças e tarefas. */}
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Cobranças em atraso</CardTitle>

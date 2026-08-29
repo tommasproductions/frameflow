@@ -54,8 +54,8 @@ export function NotificationsMenu() {
           {alerts.length > 0 ? (
             <span
               className={cn(
-                'tabular absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white',
-                urgent > 0 ? 'bg-danger' : 'bg-accent',
+                'tabular absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold',
+                urgent > 0 ? 'bg-danger text-white' : 'bg-accent text-on-accent',
               )}
             >
               {alerts.length > 9 ? '9+' : alerts.length}

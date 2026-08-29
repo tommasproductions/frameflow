@@ -124,7 +124,7 @@ export function LeadDetail() {
 
   if (!lead) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <PageHeader title="Lead" breadcrumbs={[{ label: 'Leads', to: '/leads' }]} />
         <EmptyState
           icon={Target}
@@ -201,7 +201,7 @@ export function LeadDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={lead.name}
         description={[lead.company, lead.niche].filter(Boolean).join(' · ') || undefined}
@@ -242,7 +242,7 @@ export function LeadDetail() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Valor potencial"
           value={lead.potentialValue}
@@ -272,7 +272,7 @@ export function LeadDetail() {
         />
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_400px]">
         <div className="space-y-4">
           <Card>
             <CardHeader>

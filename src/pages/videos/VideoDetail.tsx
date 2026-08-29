@@ -98,7 +98,7 @@ export function VideoDetail() {
 
   if (!video) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <PageHeader title="Vídeo" breadcrumbs={[{ label: 'Produção', to: '/production' }]} />
         <EmptyState
           icon={Clapperboard}
@@ -237,7 +237,7 @@ export function VideoDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={video.title}
         description={
@@ -295,7 +295,7 @@ export function VideoDetail() {
         </span>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Valor" value={video.value} format="currency" icon={Wallet} />
         <MetricCard
           label="Horas trabalhadas"
@@ -324,7 +324,7 @@ export function VideoDetail() {
         />
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_400px]">
         <div className="space-y-4">
           {/* -------------------------------- Checklist ------------------------------- */}
           <Card>

@@ -287,7 +287,7 @@ export function ReportsPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Relatórios"
         description={`Desempenho do negócio, com ${label.toLowerCase()} como referência.`}
@@ -303,7 +303,7 @@ export function ReportsPage() {
 
         {/* ------------------------------- Comercial ----------------------------- */}
         <TabsContent value="commercial" className="space-y-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               label="Leads no funil"
               value={leads.length}
@@ -331,7 +331,7 @@ export function ReportsPage() {
             />
           </section>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Funil por etapa</CardTitle>
@@ -391,7 +391,7 @@ export function ReportsPage() {
 
         {/* -------------------------------- Produção ----------------------------- */}
         <TabsContent value="production" className="space-y-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               label="Vídeos produzidos"
               value={videos.length}
@@ -420,7 +420,7 @@ export function ReportsPage() {
             />
           </section>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Distribuição na esteira</CardTitle>
@@ -512,7 +512,7 @@ export function ReportsPage() {
 
         {/* ------------------------------- Financeiro ---------------------------- */}
         <TabsContent value="financial" className="space-y-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard label="Recebido no mês" value={cash.received} format="currency" />
             <MetricCard label="Custos do mês" value={cash.expenses} format="currency" trend="down" />
             <MetricCard
@@ -558,7 +558,7 @@ export function ReportsPage() {
 
         {/* ----------------------------- Rentabilidade --------------------------- */}
         <TabsContent value="profitability" className="space-y-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               label="Receita contratada"
               value={totals.contracted}

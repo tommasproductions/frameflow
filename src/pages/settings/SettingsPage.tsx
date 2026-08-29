@@ -60,13 +60,13 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Configurações"
         description="Gerência dos dados locais do FrameFlow."
       />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
         <Card>
           <CardHeader>
             <div>

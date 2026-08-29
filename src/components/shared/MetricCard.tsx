@@ -47,7 +47,7 @@ export function MetricCard({
   const DeltaIcon = isFlat ? Minus : delta !== null && delta > 0 ? ArrowUpRight : ArrowDownRight
 
   return (
-    <Card className={cn('p-4', className)}>
+    <Card className={cn('p-3', className)}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-medium text-ink-dim">{label}</p>
         {Icon ? <Icon className="size-4 shrink-0 text-ink-faint" /> : null}
@@ -55,7 +55,7 @@ export function MetricCard({
 
       <p
         className={cn(
-          'tabular mt-2 text-2xl font-semibold tracking-tight',
+          'tabular mt-1.5 text-2xl font-semibold tracking-tight',
           tone ? TONE_TEXT[tone] : 'text-ink',
         )}
       >
@@ -63,7 +63,7 @@ export function MetricCard({
       </p>
 
       {delta !== null ? (
-        <div className="mt-1.5 flex items-center gap-1 text-xs">
+        <div className="mt-1 flex items-center gap-1 text-xs">
           <DeltaIcon
             className={cn(
               'size-3.5',
@@ -81,7 +81,7 @@ export function MetricCard({
           <span className="text-ink-faint">vs. período anterior</span>
         </div>
       ) : hint ? (
-        <p className="mt-1.5 text-xs text-ink-faint">{hint}</p>
+        <p className="mt-1 text-xs text-ink-faint">{hint}</p>
       ) : null}
     </Card>
   )

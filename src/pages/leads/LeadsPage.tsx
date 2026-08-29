@@ -223,7 +223,7 @@ export function LeadsPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Leads"
         description="Funil comercial, do primeiro contato ao fechamento."
@@ -241,7 +241,7 @@ export function LeadsPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Oportunidades abertas"
           value={openLeads.length}

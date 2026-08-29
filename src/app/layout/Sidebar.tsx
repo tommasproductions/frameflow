@@ -54,7 +54,7 @@ function NavRow({
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          'group relative flex h-9 items-center gap-3 rounded-md text-base font-medium transition-colors',
+          'group relative flex h-8 items-center gap-2.5 rounded-md text-sm font-medium transition-colors',
           collapsed ? 'justify-center px-0' : 'px-3',
           isActive
             ? 'bg-accent/12 text-accent'
@@ -69,7 +69,7 @@ function NavRow({
             aria-hidden
             className={cn(
               'absolute top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-accent transition-opacity',
-              collapsed ? '-left-2' : '-left-4',
+              collapsed ? '-left-2' : '-left-3',
               isActive ? 'opacity-100' : 'opacity-0',
             )}
           />
@@ -101,31 +101,31 @@ export function Sidebar({
     <aside
       className={cn(
         'flex shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-200',
-        collapsed ? 'w-16' : 'w-60',
+        collapsed ? 'w-14' : 'w-52',
       )}
     >
       {/* Marca — alinhada à altura da topbar. */}
       <div
         className={cn(
-          'flex h-14 items-center gap-2.5 border-b border-line',
+          'flex h-12 items-center gap-2 border-b border-line',
           collapsed ? 'justify-center px-0' : 'px-4',
         )}
       >
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-bold text-white">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-bold text-on-accent">
           F
         </span>
         {collapsed ? null : (
-          <span className="truncate text-lg font-semibold tracking-tight text-ink">FrameFlow</span>
+          <span className="truncate text-base font-semibold tracking-tight text-ink">FrameFlow</span>
         )}
       </div>
 
-      <nav className={cn('flex flex-1 flex-col gap-0.5 overflow-y-auto py-3', collapsed ? 'px-2' : 'px-4')}>
+      <nav className={cn('flex flex-1 flex-col gap-0.5 overflow-y-auto py-2', collapsed ? 'px-2' : 'px-3')}>
         {MAIN_NAV.map((item) => (
           <NavRow key={item.to} item={item} collapsed={collapsed} onNavigate={onNavigate} />
         ))}
       </nav>
 
-      <div className={cn('flex flex-col gap-0.5 border-t border-line py-3', collapsed ? 'px-2' : 'px-4')}>
+      <div className={cn('flex flex-col gap-0.5 border-t border-line py-2', collapsed ? 'px-2' : 'px-3')}>
         {FOOTER_NAV.map((item) => (
           <NavRow key={item.to} item={item} collapsed={collapsed} onNavigate={onNavigate} />
         ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Outlet, ScrollRestoration } from 'react-router-dom'
+import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
 
 import { Sidebar } from '@/app/layout/Sidebar'
 import { Topbar } from '@/app/layout/Topbar'
@@ -19,6 +19,7 @@ export function AppLayout() {
   )
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const { pathname } = useLocation()
 
   useEffect(() => {
     window.localStorage.setItem(COLLAPSE_KEY, String(collapsed))
@@ -71,7 +72,15 @@ export function AppLayout() {
           <div className="flex min-w-0 flex-1 flex-col">
             <Topbar onToggleSidebar={toggleSidebar} onOpenSearch={() => setSearchOpen(true)} />
             <main className="flex-1 overflow-y-auto">
-              <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
+              {/*
+                A `key` faz o contêiner remontar a cada rota, o que reinicia a
+                animação de entrada. Sem ela o CSS só rodaria na primeira carga
+                e as trocas de tela seriam secas.
+              */}
+              <div
+                key={pathname}
+                className="page-enter mx-auto max-w-[1600px] p-3 sm:p-5"
+              >
                 <Outlet />
               </div>
             </main>

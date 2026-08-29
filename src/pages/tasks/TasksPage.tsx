@@ -212,7 +212,7 @@ export function TasksPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Tarefas"
         description="Tudo que precisa ser feito, por prazo e prioridade."
@@ -230,7 +230,7 @@ export function TasksPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Em aberto"
           value={open.length}

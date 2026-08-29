@@ -96,7 +96,7 @@ export function ProjectDetail() {
 
   if (!project) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <PageHeader title="Projeto" breadcrumbs={[{ label: 'Projetos', to: '/projects' }]} />
         <EmptyState
           icon={FolderKanban}
@@ -369,7 +369,7 @@ export function ProjectDetail() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={project.name}
         description={project.description ?? undefined}
@@ -444,7 +444,7 @@ export function ProjectDetail() {
 
         {/* ------------------------------ Visão geral ----------------------------- */}
         <TabsContent value="overview" className="space-y-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard
               label="Valor contratado"
               value={project.contractedValue}
@@ -486,7 +486,7 @@ export function ProjectDetail() {
             />
           </section>
 
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               label="Vídeos entregues"
               value={metrics.deliveredCount}
@@ -612,7 +612,7 @@ export function ProjectDetail() {
 
         {/* ------------------------------- Financeiro ----------------------------- */}
         <TabsContent value="financial" className="space-y-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard label="Faturado" value={metrics.billed} format="currency" />
             <MetricCard label="Recebido" value={metrics.received} format="currency" />
             <MetricCard

@@ -415,7 +415,7 @@ export function FinancialPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Financeiro"
         description={`Entradas, saídas e resultado de ${label.toLowerCase()}.`}
@@ -433,7 +433,7 @@ export function FinancialPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           label="Recebido no mês"
           value={cash.received}
@@ -484,7 +484,7 @@ export function FinancialPage() {
 
         {/* ------------------------------ Visão geral ---------------------------- */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <div>

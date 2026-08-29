@@ -177,7 +177,7 @@ export function ProjectsPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Projetos"
         description="Escopo contratado, andamento e resultado de cada projeto."
@@ -189,7 +189,7 @@ export function ProjectsPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Projetos ativos"
           value={totals.active}
@@ -257,7 +257,7 @@ export function ProjectsPage() {
           onAction={projects.length === 0 ? () => setFormOpen(true) : undefined}
         />
       ) : view === 'cards' ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((project) => (
             <ProjectCard
               key={project.id}

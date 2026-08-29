@@ -46,7 +46,7 @@ export function Topbar({
     setMonth(new Date(month.getFullYear(), month.getMonth() + delta, 1))
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface px-3 sm:px-6">
+    <header className="flex h-12 shrink-0 items-center gap-1.5 border-b border-line bg-surface px-2.5 sm:px-4">
       <Button
         variant="ghost"
         size="icon-sm"

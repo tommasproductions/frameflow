@@ -235,7 +235,7 @@ export function ProductionPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Produção"
         description="Esteira dos vídeos, do briefing à entrega."
@@ -247,7 +247,7 @@ export function ProductionPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Em produção"
           value={inProduction.length}

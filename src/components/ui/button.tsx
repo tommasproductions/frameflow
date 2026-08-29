@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-accent text-white hover:bg-accent-hover',
+        primary: 'bg-accent text-on-accent hover:bg-accent-hover',
         secondary: 'bg-card text-ink border border-line hover:bg-hover hover:border-line-active',
         ghost: 'text-ink-dim hover:bg-hover hover:text-ink',
         outline: 'border border-line text-ink-dim hover:border-line-active hover:text-ink',

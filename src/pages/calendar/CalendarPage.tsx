@@ -80,7 +80,7 @@ export function CalendarPage() {
   const selectedItems = selected ? (byDay.get(selected) ?? []) : []
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Calendário"
         description={`Prazos, entregas, cobranças e follow-ups de ${label.toLowerCase()}.`}
@@ -136,7 +136,7 @@ export function CalendarPage() {
         ) : null}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
         <Card className="overflow-hidden">
           <div className="grid grid-cols-7 border-b border-line">
             {WEEKDAYS.map((day) => (
@@ -173,7 +173,7 @@ export function CalendarPage() {
                     className={cn(
                       'tabular flex size-5 shrink-0 items-center justify-center rounded-full text-xs',
                       isToday
-                        ? 'bg-accent font-semibold text-white'
+                        ? 'bg-accent font-semibold text-on-accent'
                         : inMonth
                           ? 'text-ink-dim'
                           : 'text-ink-faint',

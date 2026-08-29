@@ -92,7 +92,7 @@ export function ClientDetail() {
 
   if (!client) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <PageHeader title="Cliente" breadcrumbs={[{ label: 'Clientes', to: '/clients' }]} />
         <EmptyState
           icon={Users}
@@ -413,7 +413,7 @@ export function ClientDetail() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={client.name}
         description={[client.company, client.niche].filter(Boolean).join(' · ') || undefined}
@@ -467,7 +467,7 @@ export function ClientDetail() {
 
         {/* ------------------------------ Visão geral ----------------------------- */}
         <TabsContent value="overview" className="space-y-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard
               label="Receita total"
               value={metrics.contracted}
@@ -502,7 +502,7 @@ export function ClientDetail() {
             />
           </section>
 
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               label="Projetos ativos"
               value={metrics.activeProjectCount}
@@ -532,7 +532,7 @@ export function ClientDetail() {
             />
           </section>
 
-          <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+          <div className="grid gap-3 lg:grid-cols-[1fr_360px]">
             <Card>
               <CardHeader>
                 <CardTitle>Projetos recentes</CardTitle>
@@ -643,7 +643,7 @@ export function ClientDetail() {
 
         {/* ------------------------------- Financeiro ----------------------------- */}
         <TabsContent value="financial" className="space-y-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard label="Recebido" value={metrics.received} format="currency" />
             <MetricCard
               label="A receber"

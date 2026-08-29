@@ -2,49 +2,79 @@
 @import 'tw-animate-css';
 
 @theme {
+  /*
+   * Paleta monocromática.
+   *
+   * Os cinzas são neutros de propósito — sem viés de matiz. Um cinza levemente
+   * azulado parece "quase preto" isolado, mas ao lado do vermelho de atraso
+   * puxa a tela para um tom frio que compete com o sinal.
+   */
+
   /* --- Superfícies --- */
-  --color-canvas: #0f1117;
-  --color-surface: #161922;
-  --color-card: #1c1f2e;
-  --color-hover: #252836;
+  --color-canvas: #0a0a0b;
+  --color-surface: #101011;
+  --color-card: #151517;
+  --color-hover: #1e1e21;
 
   /* --- Bordas --- */
-  --color-line: #2a2d3a;
-  --color-line-active: #3b3f52;
+  --color-line: #25252a;
+  --color-line-active: #3a3a41;
 
   /* --- Texto --- */
-  --color-ink: #f1f1f4;
-  --color-ink-dim: #9ca3b4;
-  --color-ink-faint: #5c6378;
+  /*
+   * Os três níveis de texto passam em 4.5:1 sobre `card`, o fundo mais claro
+   * onde texto pequeno aparece. Num tema monocromático a hierarquia é feita só
+   * de luminância, então cada degrau precisa ser suficiente sozinho — não há
+   * matiz para ajudar a separar.
+   */
+  --color-ink: #fafafa;
+  --color-ink-dim: #a1a1a6;
+  --color-ink-faint: #7e7e87;
 
-  /* --- Marca --- */
-  --color-accent: #6c5ce7;
-  --color-accent-hover: #7c6ff7;
+  /*
+   * --- Destaque ---
+   * O branco é a cor de marca. Onde ele vira fundo sólido (botão primário,
+   * marca, dia de hoje), o texto por cima usa `on-accent` — daí este token
+   * existir em vez de `text-white` fixo no componente.
+   */
+  --color-accent: #fafafa;
+  --color-accent-hover: #ffffff;
+  --color-on-accent: #0a0a0b;
 
-  /* --- Semânticas --- */
-  --color-success: #00b894;
-  --color-warning: #fdcb6e;
-  --color-danger: #ff6b6b;
-  --color-info: #74b9ff;
+  /*
+   * --- Semânticas ---
+   * As três únicas cores que sobraram, e só porque carregam informação:
+   * atraso, lucro e aviso. Ficam dessaturadas para conviver com o
+   * monocromático sem gritar. `info` é neutro — "nada de especial aqui".
+   */
+  --color-success: #3fb950;
+  --color-warning: #d29922;
+  --color-danger: #f85149;
+  --color-info: #8b8b93;
 
   /* --- Tipografia --- */
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
 
-  --text-xs: 12px;
-  --text-xs--line-height: 16px;
-  --text-sm: 13px;
-  --text-sm--line-height: 18px;
-  --text-base: 14px;
-  --text-base--line-height: 20px;
-  --text-lg: 16px;
-  --text-lg--line-height: 24px;
-  --text-xl: 18px;
-  --text-xl--line-height: 28px;
-  --text-2xl: 22px;
-  --text-2xl--line-height: 30px;
-  --text-3xl: 28px;
-  --text-3xl--line-height: 36px;
+  /*
+   * Escala enxuta: um passo abaixo da anterior em cada degrau. O sistema é de
+   * consulta densa — tabelas, listas, quadros — e o ganho de caber mais linhas
+   * na tela supera o de cada linha ser maior.
+   */
+  --text-xs: 11px;
+  --text-xs--line-height: 15px;
+  --text-sm: 12px;
+  --text-sm--line-height: 17px;
+  --text-base: 13px;
+  --text-base--line-height: 19px;
+  --text-lg: 15px;
+  --text-lg--line-height: 21px;
+  --text-xl: 16px;
+  --text-xl--line-height: 23px;
+  --text-2xl: 19px;
+  --text-2xl--line-height: 26px;
+  --text-3xl: 24px;
+  --text-3xl--line-height: 30px;
 
   /* --- Raios --- */
   --radius-sm: 4px;
@@ -53,9 +83,12 @@
   --radius-xl: 12px;
 
   /* --- Layout --- */
-  --spacing-sidebar: 240px;
-  --spacing-sidebar-collapsed: 64px;
-  --spacing-topbar: 56px;
+  --spacing-sidebar: 208px;
+  --spacing-sidebar-collapsed: 56px;
+  --spacing-topbar: 48px;
+
+  /* --- Movimento --- */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -121,5 +154,49 @@
   /* Números tabulares para colunas financeiras */
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * Entrada de página: aparece subindo 4px em 180ms.
+   *
+   * Curta de propósito. A animação existe para dar continuidade entre telas,
+   * não para ser notada — a troca de rota tem que parecer instantânea mesmo
+   * com ela. Deslocamentos maiores viram espera.
+   */
+  .page-enter {
+    animation: page-enter 180ms var(--ease-out-soft) both;
+  }
+
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Realce de linha/card ao passar o mouse, sem deslocar o layout. */
+  .row-hover {
+    transition:
+      background-color 120ms var(--ease-out-soft),
+      border-color 120ms var(--ease-out-soft);
+  }
+}
+
+/*
+ * Quem pede menos movimento no sistema não recebe nenhum. Vale para as
+ * animações daqui e para as do tw-animate-css usadas pelos diálogos.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
