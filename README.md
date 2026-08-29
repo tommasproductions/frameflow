@@ -11,6 +11,26 @@ npm run dev
 ```
 
 `npm run build` faz typecheck e build de produção. `npm run lint` roda o oxlint.
+`npm run preview` serve o build de produção em `http://127.0.0.1:4173`.
+
+---
+
+## Deploy
+
+O projeto é uma SPA estática: o build gera `dist/` e qualquer host de arquivos serve.
+
+**Vercel** (configurado). O `vercel.json` na raiz tem a única regra que não pode
+faltar — reescrever toda rota para `index.html`. Sem ela, atualizar a página em
+`/clients/c1` devolve 404, porque só o navegador conhece essa rota, não o servidor.
+
+Com o repositório no GitHub, importe o projeto em vercel.com/new. O Vite é detectado
+sozinho (`npm run build` → `dist/`) e cada `git push` publica de novo.
+
+**Uma ressalva sobre o que o deploy resolve.** Os dados vivem no `localStorage` do
+navegador, então publicar não sincroniza nada: cada navegador que abrir a URL recebe
+uma cópia própria, começando pelo seed demonstrativo. Serve para acessar de outro
+lugar e para mostrar o sistema — não para trabalhar do celular e do desktop com os
+mesmos dados. Isso muda quando `lib/store.ts` passar a falar com um banco real.
 
 ---
 
