@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@theme {
+  /* --- Superfícies --- */
+  --color-canvas: #0f1117;
+  --color-surface: #161922;
+  --color-card: #1c1f2e;
+  --color-hover: #252836;
+
+  /* --- Bordas --- */
+  --color-line: #2a2d3a;
+  --color-line-active: #3b3f52;
+
+  /* --- Texto --- */
+  --color-ink: #f1f1f4;
+  --color-ink-dim: #9ca3b4;
+  --color-ink-faint: #5c6378;
+
+  /* --- Marca --- */
+  --color-accent: #6c5ce7;
+  --color-accent-hover: #7c6ff7;
+
+  /* --- Semânticas --- */
+  --color-success: #00b894;
+  --color-warning: #fdcb6e;
+  --color-danger: #ff6b6b;
+  --color-info: #74b9ff;
+
+  /* --- Tipografia --- */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
+
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 18px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 22px;
+  --text-2xl--line-height: 30px;
+  --text-3xl: 28px;
+  --text-3xl--line-height: 36px;
+
+  /* --- Raios --- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* --- Layout --- */
+  --spacing-sidebar: 240px;
+  --spacing-sidebar-collapsed: 64px;
+  --spacing-topbar: 56px;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  }
+
+  /* Scrollbars discretas, coerentes com o tema escuro */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-active) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-line-active);
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-ink-faint);
+  }
+}
+
+@layer utilities {
+  /* Anel de foco padrão do sistema */
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Números tabulares para colunas financeiras */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

@@ -1,0 +1,10 @@
+# Normaliza quebras de linha: LF no repositorio, nativo no disco.
+# Sem isso, um checkout no Linux (deploy) veria CRLF e o diff ficaria ruidoso.
+* text=auto eol=lf
+
+# Binarios permanecem intactos.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
