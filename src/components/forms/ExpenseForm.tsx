@@ -177,7 +177,7 @@ function ExpenseFormBody({
             <Input
               type="number"
               min={0}
-              step={10}
+              step="any"
               value={values.amount}
               onChange={(event) => set('amount', event.target.value)}
             />

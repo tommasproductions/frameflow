@@ -292,7 +292,7 @@ function VideoFormBody({
             <Input
               type="number"
               min={0}
-              step={50}
+              step="any"
               value={values.value}
               onChange={(event) => set('value', event.target.value)}
             />
@@ -301,7 +301,7 @@ function VideoFormBody({
             <Input
               type="number"
               min={0}
-              step={0.5}
+              step="any"
               value={values.estimatedHours}
               onChange={(event) => set('estimatedHours', event.target.value)}
             />
@@ -310,7 +310,7 @@ function VideoFormBody({
             <Input
               type="number"
               min={0}
-              step={0.5}
+              step="any"
               value={values.workedHours}
               onChange={(event) => set('workedHours', event.target.value)}
             />

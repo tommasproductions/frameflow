@@ -201,7 +201,7 @@ function ContractFormBody({
             <Input
               type="number"
               min={0}
-              step={100}
+              step="any"
               value={values.value}
               onChange={(event) => set('value', event.target.value)}
             />

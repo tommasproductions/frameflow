@@ -292,7 +292,7 @@ function ProjectFormBody({
             <Input
               type="number"
               min={0}
-              step={100}
+              step="any"
               value={values.contractedValue}
               onChange={(event) => set('contractedValue', event.target.value)}
             />
@@ -301,7 +301,7 @@ function ProjectFormBody({
             <Input
               type="number"
               min={0}
-              step={50}
+              step="any"
               value={values.estimatedCost}
               onChange={(event) => set('estimatedCost', event.target.value)}
             />
@@ -378,7 +378,7 @@ function ProjectFormBody({
                     <Input
                       type="number"
                       min={0}
-                      step={50}
+                      step="any"
                       value={template.valuePerVideo}
                       onChange={(event) => setTpl('valuePerVideo', Number(event.target.value))}
                     />
@@ -387,7 +387,7 @@ function ProjectFormBody({
                     <Input
                       type="number"
                       min={0}
-                      step={0.5}
+                      step="any"
                       value={template.estimatedHours}
                       onChange={(event) => setTpl('estimatedHours', Number(event.target.value))}
                     />

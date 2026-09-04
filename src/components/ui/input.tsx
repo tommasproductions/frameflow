@@ -6,6 +6,15 @@ import { cn } from '@/lib/utils'
 const fieldBase =
   'w-full rounded-md border border-line bg-canvas px-2.5 text-base text-ink transition-colors outline-none placeholder:text-ink-faint focus-visible:border-line-active focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-50'
 
+/**
+ * Campo de texto padrão.
+ *
+ * Em `type="number"`, use sempre `step="any"`. O `step` não é só o passo da
+ * setinha: ele define quais valores o navegador considera válidos, contados a
+ * partir do `min`. Com `min={0} step={50}`, digitar 55 trava o formulário com
+ * "the two nearest valid values are 50 and 100" — e centavos ficam impossíveis
+ * em qualquer campo de dinheiro.
+ */
 export function Input({ className, ...props }: ComponentProps<'input'>) {
   return <input className={cn(fieldBase, 'h-8', className)} {...props} />
 }

@@ -322,7 +322,7 @@ function LeadFormBody({
             <Input
               type="number"
               min={0}
-              step={100}
+              step="any"
               value={values.estimatedBudget}
               onChange={(event) => set('estimatedBudget', event.target.value)}
             />
@@ -331,7 +331,7 @@ function LeadFormBody({
             <Input
               type="number"
               min={0}
-              step={100}
+              step="any"
               value={values.potentialValue}
               onChange={(event) => set('potentialValue', event.target.value)}
             />
@@ -341,7 +341,7 @@ function LeadFormBody({
               type="number"
               min={0}
               max={100}
-              step={5}
+              step="any"
               value={values.closeProbability}
               onChange={(event) => set('closeProbability', event.target.value)}
             />
