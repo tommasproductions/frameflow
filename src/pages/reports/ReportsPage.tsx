@@ -34,6 +34,7 @@ import {
   monthlySeries,
   overdueVideos,
   pipelineValue,
+  productionSummary,
   profitPerHour,
   videosInProduction,
 } from '@/lib/calculations'
@@ -61,10 +62,14 @@ export function ReportsPage() {
   const clientMetrics = useAllClientMetrics()
 
   const series = useMemo(
-    () => monthlySeries(payments, expenses, recentMonths(REPORT_MONTHS)),
-    [payments, expenses, recentMonths],
+    () => monthlySeries(videos, payments, expenses, recentMonths(REPORT_MONTHS)),
+    [videos, payments, expenses, recentMonths],
   )
   const cash = cashSummary(payments, expenses, range)
+  const productionResult = useMemo(
+    () => productionSummary(videos, expenses, range),
+    [videos, expenses, range],
+  )
 
   /* ------------------------------ Comercial ------------------------------ */
 
@@ -141,19 +146,19 @@ export function ReportsPage() {
   )
 
   const totals = useMemo(() => {
-    let contracted = 0
+    let produced = 0
     let profit = 0
     let cost = 0
     let worked = 0
     for (const client of ranked) {
       const m = clientMetrics.get(client.id)
       if (!m) continue
-      contracted += m.contracted
+      produced += m.produced
       profit += m.profit
       cost += m.expenses
       worked += m.hoursWorked
     }
-    return { contracted, profit, cost, worked }
+    return { produced, profit, cost, worked }
   }, [ranked, clientMetrics])
 
   const metricsFor = (client: Client): ClientMetrics =>
@@ -170,9 +175,9 @@ export function ReportsPage() {
       key: 'revenue',
       header: 'Receita',
       align: 'right',
-      sortValue: (client) => metricsFor(client).contracted,
+      sortValue: (client) => metricsFor(client).produced,
       render: (client) => (
-        <span className="tabular text-ink">{formatCurrency(metricsFor(client).contracted)}</span>
+        <span className="tabular text-ink">{formatCurrency(metricsFor(client).produced)}</span>
       ),
     },
     {
@@ -512,28 +517,50 @@ export function ReportsPage() {
 
         {/* ------------------------------- Financeiro ---------------------------- */}
         <TabsContent value="financial" className="space-y-4">
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard label="Recebido no mês" value={cash.received} format="currency" />
-            <MetricCard label="Custos do mês" value={cash.expenses} format="currency" trend="down" />
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard
-              label="Resultado do mês"
-              value={cash.profit}
+              label="Produzido no mês"
+              value={productionResult.produced}
               format="currency"
-              tone={cash.profit < 0 ? 'danger' : undefined}
+              hint={
+                productionResult.delivered === 1
+                  ? '1 vídeo entregue'
+                  : `${productionResult.delivered} vídeos entregues`
+              }
+            />
+            <MetricCard
+              label="Custos do mês"
+              value={productionResult.expenses}
+              format="currency"
+              trend="down"
+            />
+            <MetricCard
+              label="Lucro do mês"
+              value={productionResult.profit}
+              format="currency"
+              tone={productionResult.profit < 0 ? 'danger' : undefined}
             />
             <MetricCard
               label="Margem do mês"
-              value={cash.margin}
+              value={productionResult.margin}
               format="percentage"
-              tone={cash.profit < 0 ? 'danger' : undefined}
+              tone={productionResult.profit < 0 ? 'danger' : undefined}
+            />
+            <MetricCard
+              label="Recebido no mês"
+              value={cash.received}
+              format="currency"
+              hint="caixa, não resultado"
             />
           </section>
 
           <Card>
             <CardHeader>
               <div>
-                <CardTitle>Receita e custos — 12 meses</CardTitle>
-                <p className="text-xs text-ink-dim">Por caixa: data de recebimento e de custo.</p>
+                <CardTitle>Produção e custos — 12 meses</CardTitle>
+                <p className="text-xs text-ink-dim">
+                  Receita pelo valor dos vídeos entregues no mês; custos pela data do lançamento.
+                </p>
               </div>
             </CardHeader>
             <CardContent>
@@ -544,9 +571,9 @@ export function ReportsPage() {
           <Card>
             <CardHeader>
               <div>
-                <CardTitle>Resultado — 12 meses</CardTitle>
+                <CardTitle>Lucro — 12 meses</CardTitle>
                 <p className="text-xs text-ink-dim">
-                  Meses negativos acontecem quando o custo cai antes da receita entrar.
+                  Meses negativos acontecem quando o custo cai num mês sem entrega.
                 </p>
               </div>
             </CardHeader>
@@ -560,10 +587,10 @@ export function ReportsPage() {
         <TabsContent value="profitability" className="space-y-4">
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              label="Receita contratada"
-              value={totals.contracted}
+              label="Receita de produção"
+              value={totals.produced}
               format="currency"
-              hint="Pago mais em aberto"
+              hint="Soma do valor dos vídeos"
             />
             <MetricCard
               label="Lucro"
@@ -571,7 +598,7 @@ export function ReportsPage() {
               format="currency"
               icon={TrendingUp}
               tone={totals.profit < 0 ? 'danger' : undefined}
-              hint={`Margem de ${formatPercent(totals.contracted ? (totals.profit / totals.contracted) * 100 : 0)}`}
+              hint={`Margem de ${formatPercent(totals.produced ? (totals.profit / totals.produced) * 100 : 0)}`}
             />
             <MetricCard
               label="Lucro por hora"
@@ -582,7 +609,7 @@ export function ReportsPage() {
             />
             <MetricCard
               label="Ticket médio"
-              value={averageTicket(totals.contracted, projects.length)}
+              value={averageTicket(totals.produced, projects.length)}
               format="currency"
               hint={`${projects.length} projetos`}
             />

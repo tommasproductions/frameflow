@@ -57,7 +57,7 @@ export function ClientCard({
         <div>
           <dt className="text-xs text-ink-faint">Receita</dt>
           <dd className="tabular text-sm font-semibold text-ink">
-            {formatCurrency(metrics.contracted)}
+            {formatCurrency(metrics.produced)}
           </dd>
         </div>
         <div>

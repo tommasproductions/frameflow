@@ -144,9 +144,11 @@ export function ProjectDetail() {
   const closed =
     project.status === ProjectStatus.COMPLETED || project.status === ProjectStatus.CANCELLED
   const due = deadlineLabel(project.deadline, closed)
-  // A diferença entre o valor combinado e o que já virou cobrança é o que
-  // ainda falta faturar — o tipo de coisa que passa despercebida sem um número.
-  const notBilled = project.contractedValue - metrics.billed
+  // O valor do projeto é a soma dos seus vídeos. O campo do cadastro continua
+  // existindo como o que foi combinado com o cliente, e a diferença entre os
+  // dois é informação: vídeo a mais que entrou no pacote, ou vídeo que falta
+  // cadastrar. Some-as e o projeto valeria o dobro, então só uma é a receita.
+  const contractGap = metrics.produced - project.contractedValue
 
   function handleDelete() {
     if (!project) return
@@ -446,16 +448,16 @@ export function ProjectDetail() {
         <TabsContent value="overview" className="space-y-4">
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard
-              label="Valor contratado"
-              value={project.contractedValue}
+              label="Valor do projeto"
+              value={metrics.produced}
               format="currency"
               icon={Wallet}
               hint={
-                notBilled > 0
-                  ? `${formatCurrency(notBilled)} ainda não faturados`
-                  : 'totalmente faturado'
+                metrics.videoCount === 0
+                  ? 'nenhum vídeo cadastrado ainda'
+                  : `${metrics.videoCount} vídeos · ${formatCurrency(metrics.deliveredValue)} já entregues`
               }
-              tone={notBilled > 0 ? 'warning' : undefined}
+              tone={metrics.videoCount === 0 ? 'warning' : undefined}
             />
             <MetricCard
               label="Custos"
@@ -463,7 +465,11 @@ export function ProjectDetail() {
               format="currency"
               icon={Receipt}
               trend="down"
-              hint={`${formatCurrency(project.estimatedCost)} estimados`}
+              hint={
+                metrics.videoCost > 0
+                  ? `${formatCurrency(metrics.videoCost)} direto nos vídeos`
+                  : `${formatCurrency(project.estimatedCost)} estimados`
+              }
             />
             <MetricCard
               label="Lucro"
@@ -612,8 +618,24 @@ export function ProjectDetail() {
 
         {/* ------------------------------- Financeiro ----------------------------- */}
         <TabsContent value="financial" className="space-y-4">
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard label="Faturado" value={metrics.billed} format="currency" />
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <MetricCard
+              label="Produzido"
+              value={metrics.produced}
+              format="currency"
+              hint="soma do valor dos vídeos"
+            />
+            <MetricCard
+              label="Faturado"
+              value={metrics.billed}
+              format="currency"
+              hint={
+                metrics.notBilled > 0
+                  ? `${formatCurrency(metrics.notBilled)} a cobrar`
+                  : 'tudo lançado'
+              }
+              tone={metrics.notBilled > 0 ? 'warning' : undefined}
+            />
             <MetricCard label="Recebido" value={metrics.received} format="currency" />
             <MetricCard
               label="A receber"
@@ -623,6 +645,22 @@ export function ProjectDetail() {
             />
             <MetricCard label="Custos" value={metrics.expenses} format="currency" trend="down" />
           </section>
+
+          {/*
+            O valor combinado no cadastro contra o que os vídeos somam. Divergir
+            não é erro — é um vídeo extra negociado, ou um que ainda falta
+            cadastrar —, mas é o tipo de diferença que ninguém percebe sozinho.
+          */}
+          {project.contractedValue > 0 && contractGap !== 0 ? (
+            <p className="text-xs text-ink-faint">
+              O cadastro do projeto diz {formatCurrency(project.contractedValue)} e os vídeos somam{' '}
+              {formatCurrency(metrics.produced)} —{' '}
+              {contractGap > 0
+                ? `${formatCurrency(contractGap)} a mais do que o combinado.`
+                : `${formatCurrency(Math.abs(contractGap))} a menos: pode faltar cadastrar vídeo.`}{' '}
+              Receita, lucro e margem usam a soma dos vídeos.
+            </p>
+          ) : null}
 
           <Card>
             <CardHeader>
@@ -635,7 +673,7 @@ export function ProjectDetail() {
                   size="inline"
                   icon={Wallet}
                   title="Nenhuma cobrança"
-                  description={`O valor combinado é ${formatCurrency(project.contractedValue)}, mas ainda não há recebimentos lançados.`}
+                  description={`Os vídeos deste projeto somam ${formatCurrency(metrics.produced)}, mas ainda não há recebimentos lançados.`}
                 />
               ) : (
                 <DataTable

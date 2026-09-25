@@ -61,6 +61,7 @@ import {
   formatHours,
   initials,
   sortBy,
+  sumBy,
 } from '@/lib/utils'
 import {
   VideoStatus,
@@ -84,6 +85,13 @@ export function ClientDetail() {
   const { leads } = useLeads()
   const { entries } = useActivityLog()
   const metrics = useClientMetrics(id)
+
+  /** Quanto um projeto vale: a soma do valor dos seus vídeos. */
+  const projectValue = (projectId: string) =>
+    sumBy(
+      videos.filter((video) => video.projectId === projectId),
+      (video) => video.value,
+    )
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -191,9 +199,9 @@ export function ClientDetail() {
       key: 'value',
       header: 'Valor',
       align: 'right',
-      sortValue: (project) => project.contractedValue,
+      sortValue: (project) => projectValue(project.id),
       render: (project) => (
-        <span className="tabular text-ink">{formatCurrency(project.contractedValue)}</span>
+        <span className="tabular text-ink">{formatCurrency(projectValue(project.id))}</span>
       ),
     },
     {
@@ -470,7 +478,7 @@ export function ClientDetail() {
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard
               label="Receita total"
-              value={metrics.contracted}
+              value={metrics.produced}
               format="currency"
               icon={Wallet}
               hint={`${formatCurrency(metrics.received)} recebidos`}
@@ -664,7 +672,7 @@ export function ClientDetail() {
             <CardHeader>
               <CardTitle>Recebimentos</CardTitle>
               <span className="tabular text-xs text-ink-faint">
-                {formatCurrency(metrics.contracted)}
+                {formatCurrency(metrics.billed)}
               </span>
             </CardHeader>
             <CardContent className="pt-0">
@@ -713,8 +721,9 @@ export function ClientDetail() {
           </Card>
 
           <p className="text-xs text-ink-faint">
-            Lucro e margem usam a receita contratada ({formatCurrency(metrics.contracted)}), não
-            apenas o que já entrou em caixa — é a leitura de rentabilidade da conta.
+            Lucro e margem usam a receita de produção ({formatCurrency(metrics.produced)}) — a soma
+            do valor dos vídeos deste cliente —, não o que já entrou em caixa. Os recebimentos ao
+            lado respondem outra pergunta: quanto disso já foi cobrado e pago.
           </p>
         </TabsContent>
 

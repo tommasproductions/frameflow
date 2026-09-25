@@ -278,8 +278,16 @@ export interface Video {
   status: VideoStatus
   priority: Priority
   deadline: string | null
+  /**
+   * Dia em que o video foi entregue. O sistema preenche sozinho quando o video
+   * chega em `delivered` e limpa quando ele volta para a esteira — e um video
+   * so vira receita no mes desta data.
+   */
+  deliveredAt: string | null
   durationSeconds: number | null
+  /** Preco cobrado pelo video. E a receita do sistema inteiro. */
   value: number
+  /** Custo direto do video: freela, trilha, banco de imagens. */
   cost: number
   estimatedHours: number | null
   workedHours: number | null

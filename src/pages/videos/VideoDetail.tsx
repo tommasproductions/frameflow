@@ -9,6 +9,7 @@ import {
   Plus,
   Send,
   Trash2,
+  TrendingUp,
   Wallet,
   X,
 } from 'lucide-react'
@@ -59,6 +60,7 @@ import { videoRevisionsStore } from '@/lib/store'
 import {
   cn,
   deadlineLabel,
+  formatCurrency,
   formatDate,
   formatDuration,
   formatHours,
@@ -295,8 +297,26 @@ export function VideoDetail() {
         </span>
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Valor" value={video.value} format="currency" icon={Wallet} />
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricCard
+          label="Valor"
+          value={video.value}
+          format="currency"
+          icon={Wallet}
+          hint={
+            video.deliveredAt
+              ? `entregue em ${formatDate(video.deliveredAt)}`
+              : 'ainda não entregue'
+          }
+        />
+        <MetricCard
+          label="Lucro"
+          value={video.value - video.cost}
+          format="currency"
+          icon={TrendingUp}
+          tone={video.value - video.cost < 0 ? 'danger' : undefined}
+          hint={video.cost > 0 ? `${formatCurrency(video.cost)} de custo` : 'sem custo direto'}
+        />
         <MetricCard
           label="Horas trabalhadas"
           value={video.workedHours}
@@ -310,8 +330,8 @@ export function VideoDetail() {
           }
         />
         <MetricCard
-          label="Valor por hora"
-          value={video.workedHours ? video.value / video.workedHours : null}
+          label="Lucro por hora"
+          value={video.workedHours ? (video.value - video.cost) / video.workedHours : null}
           format="currency"
           hint={overHours ? 'acima da estimativa' : 'dentro da estimativa'}
           tone={overHours ? 'warning' : undefined}

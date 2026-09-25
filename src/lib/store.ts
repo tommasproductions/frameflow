@@ -7,7 +7,8 @@ import {
   type Database,
 } from '@/lib/schema'
 import { buildSeedDatabase } from '@/lib/seedData'
-import { generateId, now } from '@/lib/utils'
+import { generateId, now, today } from '@/lib/utils'
+import { VideoStatus, type Video } from '@/types'
 
 /**
  * Estado da aplicação em memória, espelhando o banco do usuário.
@@ -202,7 +203,6 @@ export const leadsStore = collection('leads', 'lead')
 export const leadActivitiesStore = collection('leadActivities', 'lact')
 export const clientsStore = collection('clients', 'cli')
 export const projectsStore = collection('projects', 'proj')
-export const videosStore = collection('videos', 'vid')
 export const videoRevisionsStore = collection('videoRevisions', 'rev')
 export const tasksStore = collection('tasks', 'task')
 export const paymentsStore = collection('payments', 'pay')
@@ -211,6 +211,78 @@ export const contractsStore = collection('contracts', 'ctr')
 export const calendarEventsStore = collection('calendarEvents', 'evt')
 export const activityLogStore = collection('activityLog', 'log')
 export const notificationsStore = collection('notifications', 'ntf')
+
+/* -------------------------------------------------------------------------- */
+/*                                   Vídeos                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Vídeos carregam uma regra que nenhuma tela precisa lembrar: a data de entrega
+ * é do sistema, não do formulário.
+ *
+ * Ela é o que liga produção a dinheiro — a receita de um mês é a soma dos vídeos
+ * entregues naquele mês. Três caminhos diferentes mexem no status (arrastar o
+ * card na esteira, o formulário e a tela do vídeo), e bastava um esquecer de
+ * preencher a data para o faturamento do mês sair errado. Envolvendo o store,
+ * o lugar é um só e não há como escapar dele.
+ */
+const videos = collection('videos', 'vid')
+
+/**
+ * A data que o vídeo deve ter depois da escrita.
+ *
+ * Só vídeo entregue tem data: quando um card volta para a esteira, a receita
+ * daquele mês deixa de existir junto. `preferred` é uma data digitada à mão —
+ * corrigir uma entrega lançada no dia errado — e ganha das outras.
+ */
+function deliveryDateFor(
+  status: VideoStatus,
+  preferred: string | null | undefined,
+  current: string | null | undefined,
+): string | null {
+  if (status !== VideoStatus.DELIVERED) return null
+  return preferred ?? current ?? today()
+}
+
+/**
+ * Rascunho de vídeo. `deliveredAt` é opcional justamente porque quem preenche é
+ * o store — nenhum formulário deveria precisar saber que o campo existe.
+ */
+export type VideoDraft = Omit<Draft<Video>, 'deliveredAt'> & { deliveredAt?: string | null }
+
+export const videosStore = {
+  ...videos,
+
+  create(draft: VideoDraft): Video {
+    return videos.create({
+      ...draft,
+      deliveredAt: deliveryDateFor(draft.status, draft.deliveredAt, null),
+    })
+  },
+
+  createMany(drafts: VideoDraft[]): Video[] {
+    return videos.createMany(
+      drafts.map((draft) => ({
+        ...draft,
+        deliveredAt: deliveryDateFor(draft.status, draft.deliveredAt, null),
+      })),
+    )
+  },
+
+  update(id: string, patch: Partial<Video>): Video | undefined {
+    const current = videos.byId(id)
+    if (!current) return undefined
+
+    return videos.update(id, {
+      ...patch,
+      deliveredAt: deliveryDateFor(
+        patch.status ?? current.status,
+        patch.deliveredAt,
+        current.deliveredAt,
+      ),
+    })
+  },
+}
 
 /* -------------------------------------------------------------------------- */
 /*                            Manutenção dos dados                            */

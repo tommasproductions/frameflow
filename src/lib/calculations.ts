@@ -10,6 +10,7 @@ import {
   PaymentStatus,
   ProjectStatus,
   TaskStatus,
+  VideoStatus,
   type Contract,
   type DateRange,
   type Expense,
@@ -26,12 +27,29 @@ import {
  * carregadas, para que sirvam igualmente ao dashboard, aos relatórios e aos
  * recortes por cliente/projeto/vídeo.
  *
- * Convenção de receita, aplicada em todo o sistema:
- *   - **contratada** — tudo que não foi cancelado (pago + em aberto)
- *   - **recebida**   — apenas `paid`
- *   - **a receber**  — `pending` + `overdue`
- * Os cartões por cliente/projeto usam a receita contratada; os cartões mensais
- * do dashboard usam a recebida, porque medem caixa do mês.
+ * ## A regra de receita do sistema
+ *
+ * **Quem gera receita é o vídeo.** O preço de cada vídeo é a unidade de
+ * faturamento, e a soma deles é o que um projeto, um cliente ou um mês valem.
+ * Isso vem de como o trabalho realmente acontece: um editor não vende "um
+ * projeto", vende vídeos — e o valor de um projeto é o que seus vídeos somam.
+ *
+ * Duas leituras saem daí, e elas respondem perguntas diferentes:
+ *
+ *   - **produção** — quanto foi produzido e quanto sobrou disso.
+ *     Receita = soma do valor dos vídeos. Num período, só os vídeos entregues
+ *     dentro dele (pela data de entrega). É a leitura de resultado.
+ *   - **caixa** — quanto entrou e quanto saiu da conta no período.
+ *     Vem dos recebimentos com status `paid`. É a leitura de fluxo.
+ *
+ * As duas nunca se somam: são o mesmo dinheiro visto de dois ângulos. Somá-las
+ * dobraria o faturamento, que é exatamente o erro que esta separação evita.
+ *
+ * Os recebimentos deixaram de ser a base do lucro e passaram a responder só
+ * "quanto disso já caiu na conta": recebido, a receber e vencido.
+ *
+ * Custo tem as duas metades: o custo direto gravado no vídeo (freela, trilha,
+ * banco de imagens) e os lançamentos de custo do período. Os dois entram.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -58,15 +76,61 @@ function inRange(date: string | null | undefined, range?: DateRange): boolean {
   return isWithinRange(date, range.from, range.to)
 }
 
+/**
+ * O vídeo pertence ao escopo pedido?
+ *
+ * Precisa ser separado de `inScope` por um detalhe que morderia calado: o vídeo
+ * se identifica por `id`, não por `videoId`. Passá-lo pela função genérica faria
+ * todo recorte por vídeo devolver vazio, e um total zerado parece dado, não bug.
+ */
+function videoInScope(video: Video, filter?: ScopeFilter): boolean {
+  if (!filter) return true
+  if (filter.clientId && video.clientId !== filter.clientId) return false
+  if (filter.projectId && video.projectId !== filter.projectId) return false
+  if (filter.videoId && video.id !== filter.videoId) return false
+  return true
+}
+
 /* -------------------------------------------------------------------------- */
-/*                                  Receita                                   */
+/*                            Receita de produção                             */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Receita contratada: soma de tudo que não foi cancelado.
+ * Os vídeos que respondem pela receita de um recorte.
+ *
+ * Sem `dateRange`, são todos os vídeos do escopo — a pergunta é "quanto este
+ * projeto vale", e um vídeo ainda na esteira já faz parte desse valor.
+ *
+ * Com `dateRange`, são só os entregues dentro do intervalo. Aí a pergunta é
+ * "quanto rendeu este mês", e o que ainda não foi entregue não rendeu nada.
+ */
+export function scopedVideos(videos: Video[], filters?: ScopeFilter): Video[] {
+  const range = filters?.dateRange
+  return videos.filter((video) => {
+    if (!videoInScope(video, filters)) return false
+    if (!range) return true
+    return video.status === VideoStatus.DELIVERED && inRange(video.deliveredAt, range)
+  })
+}
+
+/** Vídeos entregues dentro do intervalo, na ordem em que estavam. */
+export function deliveredVideos(videos: Video[], range: DateRange): Video[] {
+  return videos.filter(
+    (video) => video.status === VideoStatus.DELIVERED && inRange(video.deliveredAt, range),
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*                             Recebimentos (caixa)                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Tudo que foi lançado como recebimento e não foi cancelado — pago e em aberto.
+ * Não é mais a base do lucro: serve para comparar o que foi produzido com o que
+ * chegou a virar cobrança.
  * Quando há `dateRange`, filtra pelo vencimento.
  */
-export function totalRevenue(payments: Payment[], filters?: ScopeFilter): number {
+export function billedRevenue(payments: Payment[], filters?: ScopeFilter): number {
   return sumBy(
     payments.filter(
       (p) =>
@@ -293,39 +357,63 @@ export function checklistProgress(video: Video): number {
 /* -------------------------------------------------------------------------- */
 
 export interface FinancialSummary {
-  /** Não cancelada: recebida + a receber. */
-  contracted: number
+  /** Receita de produção: soma do preço dos vídeos do escopo. */
+  produced: number
+  /** Quantos vídeos entraram nessa soma. */
+  videoCount: number
+  /** Lançado em recebimentos, fora os cancelados. */
+  billed: number
+  /** Caixa: recebimentos com status `paid`. */
   received: number
   receivable: number
   overdue: number
+  /** Custo direto dos vídeos do escopo. */
+  videoCost: number
+  /** Custo total: o direto dos vídeos mais os lançamentos de custo. */
   expenses: number
+  /** `produced` − `expenses`. */
   profit: number
   margin: number
+  /**
+   * Produzido menos o que já virou cobrança. Positivo significa trabalho
+   * entregue que ainda não foi lançado como recebimento.
+   */
+  notBilled: number
 }
 
 /**
- * Bloco financeiro de um escopo. Usa a receita contratada como base de lucro e
- * margem — é a leitura de rentabilidade do trabalho, não de caixa.
+ * Bloco financeiro de um escopo — cliente, projeto ou vídeo.
+ *
+ * Lucro e margem saem da produção: o que os vídeos somam menos o que custaram.
+ * Os números de recebimento vêm junto porque a pergunta seguinte é sempre
+ * "e quanto disso já entrou", mas eles não participam do resultado.
  */
 export function financialSummary(
   payments: Payment[],
   expenses: Expense[],
+  videos: Video[],
   filters?: ScopeFilter,
 ): FinancialSummary {
-  const contracted = totalRevenue(payments, filters)
-  const received = paidRevenue(payments, filters)
-  const receivable = receivableRevenue(payments, filters)
-  const overdue = overdueRevenue(payments, filters)
-  const cost = totalExpenses(expenses, filters)
-  const result = profit(contracted, cost)
+  const scoped = scopedVideos(videos, filters)
+  const produced = sumBy(scoped, (video) => video.value)
+  const direct = sumBy(scoped, (video) => video.cost)
+  const logged = totalExpenses(expenses, filters)
+  const cost = direct + logged
+  const result = profit(produced, cost)
+  const billed = billedRevenue(payments, filters)
+
   return {
-    contracted,
-    received,
-    receivable,
-    overdue,
+    produced,
+    videoCount: scoped.length,
+    billed,
+    received: paidRevenue(payments, filters),
+    receivable: receivableRevenue(payments, filters),
+    overdue: overdueRevenue(payments, filters),
+    videoCost: direct,
     expenses: cost,
     profit: result,
-    margin: margin(result, contracted),
+    margin: margin(result, produced),
+    notBilled: produced - billed,
   }
 }
 
@@ -334,38 +422,94 @@ export interface MonthlyPoint {
   key: string
   /** Rótulo curto: "ago". */
   label: string
+  /** Receita de produção: vídeos entregues no mês. */
+  produced: number
+  /** Vídeos entregues no mês. */
+  delivered: number
+  /** Caixa que entrou no mês — a outra leitura, para comparação. */
   received: number
+  /** Custo dos vídeos entregues mais os lançamentos com data no mês. */
   expenses: number
+  /** `produced` − `expenses`. */
   profit: number
   margin: number
 }
 
 /**
- * Série mensal de caixa para os gráficos do dashboard e dos relatórios.
- * Cada ponto usa a mesma regra de `cashSummary`, mês a mês.
+ * Série mensal para os gráficos do dashboard e dos relatórios.
+ * Cada ponto é um `productionSummary`, com o caixa do mês ao lado.
  */
 export function monthlySeries(
+  videos: Video[],
   payments: Payment[],
   expenses: Expense[],
   months: Date[],
 ): MonthlyPoint[] {
   return months.map((month) => {
     const range = monthRange(month)
-    const summary = cashSummary(payments, expenses, range)
+    const production = productionSummary(videos, expenses, range)
     return {
       key: range.from.slice(0, 7),
       label: month.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
-      received: summary.received,
-      expenses: summary.expenses,
-      profit: summary.profit,
-      margin: summary.margin,
+      produced: production.produced,
+      delivered: production.delivered,
+      received: paidRevenue(payments, { dateRange: range }),
+      expenses: production.expenses,
+      profit: production.profit,
+      margin: production.margin,
     }
   })
 }
 
+export interface ProductionSummary {
+  /** Soma do preço dos vídeos entregues no período. */
+  produced: number
+  /** Quantos vídeos foram entregues. */
+  delivered: number
+  /** Custo direto desses vídeos. */
+  videoCost: number
+  /** Lançamentos de custo com data no período. */
+  loggedCost: number
+  /** Custo total do período. */
+  expenses: number
+  /** `produced` − `expenses`. */
+  profit: number
+  margin: number
+}
+
 /**
- * Bloco de caixa de um período: entradas e saídas com data dentro do intervalo.
- * É o que o dashboard mostra no cartão do mês.
+ * Resultado da produção de um período: o que foi entregue menos o que custou.
+ * É o cartão de lucro do mês — a leitura que o sistema trata como resultado.
+ */
+export function productionSummary(
+  videos: Video[],
+  expenses: Expense[],
+  range: DateRange,
+): ProductionSummary {
+  const delivered = deliveredVideos(videos, range)
+  const produced = sumBy(delivered, (video) => video.value)
+  const direct = sumBy(delivered, (video) => video.cost)
+  const logged = totalExpenses(expenses, { dateRange: range })
+  const cost = direct + logged
+  const result = profit(produced, cost)
+
+  return {
+    produced,
+    delivered: delivered.length,
+    videoCost: direct,
+    loggedCost: logged,
+    expenses: cost,
+    profit: result,
+    margin: margin(result, produced),
+  }
+}
+
+/**
+ * Bloco de caixa de um período: o que entrou e o que saiu da conta.
+ *
+ * Continua existindo ao lado da produção porque responde outra pergunta — mês
+ * bom de produção e mês bom de caixa não são o mesmo mês quando o cliente
+ * paga depois.
  */
 export function cashSummary(
   payments: Payment[],

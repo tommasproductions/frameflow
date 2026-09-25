@@ -72,7 +72,7 @@ export function ClientsPage() {
     let mrr = 0
     for (const client of filtered) {
       const m = metricsFor(client)
-      contracted += m.contracted
+      contracted += m.produced
       profit += m.profit
       receivable += m.receivable
       mrr += m.mrr
@@ -133,9 +133,9 @@ export function ClientsPage() {
       key: 'revenue',
       header: 'Receita',
       align: 'right',
-      sortValue: (client) => metricsFor(client).contracted,
+      sortValue: (client) => metricsFor(client).produced,
       render: (client) => (
-        <span className="tabular text-ink">{formatCurrency(metricsFor(client).contracted)}</span>
+        <span className="tabular text-ink">{formatCurrency(metricsFor(client).produced)}</span>
       ),
     },
     {

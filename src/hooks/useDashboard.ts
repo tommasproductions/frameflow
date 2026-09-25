@@ -21,15 +21,23 @@ import {
   overdueTasks,
   overdueVideos,
   pipelineValue,
+  productionSummary,
   receivableRevenue,
   videosInProduction,
   type MonthlyPoint,
+  type ProductionSummary,
 } from '@/lib/calculations'
 import { DASHBOARD_MONTHS, VIDEO_STATUS_ORDER } from '@/lib/constants'
 import { isSameMonth, sortBy } from '@/lib/utils'
 import type { Lead, LeadStage, Payment, Task, Video, VideoStatus } from '@/types'
 
 export interface DashboardData {
+  /**
+   * Resultado da produção do mês e do mês anterior — vídeos entregues menos o
+   * que custaram. É a leitura de lucro do sistema.
+   */
+  productionResult: ProductionSummary
+  previousProductionResult: ProductionSummary
   /** Caixa do mês selecionado e do mês anterior, para as variações. */
   cash: { received: number; expenses: number; profit: number; margin: number }
   previousCash: { received: number; expenses: number; profit: number; margin: number }
@@ -88,12 +96,14 @@ export function useDashboard(): DashboardData {
     const closedLeads = leads.filter((lead) => lead.stage === 'closed').length
 
     return {
+      productionResult: productionSummary(videos, expenses, range),
+      previousProductionResult: productionSummary(videos, expenses, previousRange),
       cash: cashSummary(payments, expenses, range),
       previousCash: cashSummary(payments, expenses, previousRange),
       receivable: receivableRevenue(payments),
       overdueAmount: late.reduce((acc, payment) => acc + payment.amount, 0),
       monthlyRecurring: monthlyRecurringRevenue(contracts),
-      series: monthlySeries(payments, expenses, recentMonths(DASHBOARD_MONTHS)),
+      series: monthlySeries(videos, payments, expenses, recentMonths(DASHBOARD_MONTHS)),
       counts: {
         newLeads: leads.filter((lead) => isSameMonth(lead.createdAt, month)).length,
         previousNewLeads: leads.filter((lead) => isSameMonth(lead.createdAt, previousMonth)).length,

@@ -1,7 +1,16 @@
-import { AlertTriangle, Clapperboard, Clock, KanbanSquare, List, Plus } from 'lucide-react'
+import {
+  AlertTriangle,
+  Clapperboard,
+  Clock,
+  KanbanSquare,
+  List,
+  Plus,
+  TrendingUp,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { usePeriod } from '@/app/period'
 import { VideoCard } from '@/components/cards/VideoCard'
 import { VideoForm } from '@/components/forms/VideoForm'
 import { KanbanBoard, type KanbanColumnData } from '@/components/kanban/KanbanBoard'
@@ -18,7 +27,12 @@ import { useProjects } from '@/hooks/useProjects'
 import { useVideoRevisions } from '@/hooks/useVideoRevisions'
 import { useVideos } from '@/hooks/useVideos'
 import { logStatusChange } from '@/lib/activity'
-import { hoursSummary, overdueVideos, videosInProduction } from '@/lib/calculations'
+import {
+  deliveredVideos,
+  hoursSummary,
+  overdueVideos,
+  videosInProduction,
+} from '@/lib/calculations'
 import {
   applyStatusToChecklist,
   PRIORITY_LABEL,
@@ -45,6 +59,7 @@ type View = 'kanban' | 'list'
 
 export function ProductionPage() {
   const navigate = useNavigate()
+  const { range, label } = usePeriod()
   const { videos, update } = useVideos()
   const { clients, byId: clientById } = useClients()
   const { projects } = useProjects()
@@ -54,6 +69,13 @@ export function ProductionPage() {
   const [localFilters, setLocalFilters] = useState<FilterValues>({})
   const [view, setView] = useState<View>('kanban')
   const [formOpen, setFormOpen] = useState(false)
+
+  // Receita que a esteira gerou no mês da topbar: só os vídeos entregues dentro
+  // dele, a mesma base do lucro no Financeiro.
+  const deliveredThisMonth = useMemo(() => {
+    const delivered = deliveredVideos(videos, range)
+    return { count: delivered.length, produced: sumBy(delivered, (video) => video.value) }
+  }, [videos, range])
 
   const statusFilter = searchParams.get('status') ?? ''
   const filters: FilterValues = { ...localFilters, status: statusFilter }
@@ -247,7 +269,7 @@ export function ProductionPage() {
         }
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           label="Em produção"
           value={inProduction.length}
@@ -274,6 +296,22 @@ export function ProductionPage() {
           value={sumBy(inProduction, (video) => video.value)}
           format="currency"
           hint="Ainda não aprovado nem entregue"
+        />
+        {/*
+          O que a esteira já converteu em receita no mês selecionado. Fecha o
+          ciclo: o número do topo do Financeiro nasce aqui, quando um card chega
+          ao fim da esteira.
+        */}
+        <MetricCard
+          label="Entregue no mês"
+          value={deliveredThisMonth.produced}
+          format="currency"
+          icon={TrendingUp}
+          hint={
+            deliveredThisMonth.count === 1
+              ? `1 vídeo em ${label.toLowerCase()}`
+              : `${deliveredThisMonth.count} vídeos em ${label.toLowerCase()}`
+          }
         />
       </section>
 

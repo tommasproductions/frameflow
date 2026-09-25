@@ -98,11 +98,34 @@ tons (`success`, `warning`, `danger`, `info`, `accent`, `neutral`) definidos em
 transformam o tom no que cada contexto precisa. Gráficos usam `THEME_HEX`, porque
 Recharts não lê classes do Tailwind.
 
-**Receita.** Três leituras diferentes, usadas de propósito em lugares diferentes:
+**Receita.** Quem gera receita é o vídeo. O preço de cada vídeo é a unidade de
+faturamento, e a soma deles é o que um projeto, um cliente ou um mês valem — um editor
+não vende "um projeto", vende vídeos. Daí saem duas leituras, que respondem perguntas
+diferentes e **nunca se somam**:
 
-- **contratada** — tudo que não foi cancelado; é a base de lucro e margem por cliente e por projeto
-- **recebida** — só o que foi pago; é a base dos cartões mensais do dashboard, que medem caixa
-- **a receber** — pendente + atrasado
+- **produção** — soma do valor dos vídeos. Num período, só os que foram entregues
+  dentro dele, pela data em `deliveredAt`. É a base de lucro e margem em todo o
+  sistema: dashboard, financeiro, relatórios, projeto e cliente.
+- **caixa** — recebimentos com status `paid`, pela data do pagamento. Responde
+  "quanto entrou na conta", não "quanto sobrou".
+
+Somar as duas dobraria o faturamento: são o mesmo dinheiro em momentos diferentes —
+o vídeo entregue em agosto e pago em setembro entra no lucro de agosto e no caixa de
+setembro. Por isso as telas as mostram em blocos separados e rotulados.
+
+Os recebimentos (`Payment`) deixaram de ser base de lucro e respondem só o que já foi
+cobrado e pago: **faturado** (não cancelado), **recebido** (pago), **a receber**
+(pendente + atrasado). A diferença entre produzido e faturado é o que falta cobrar.
+
+**Custo.** Tem duas metades, e as duas entram no resultado: o custo direto gravado no
+próprio vídeo (`video.cost` — freela, trilha, banco de imagens) e os lançamentos em
+`Expense`. São registros diferentes de propósito; lançar a mesma saída nos dois conta
+duas vezes.
+
+**Data de entrega.** `deliveredAt` é preenchido pelo store, nunca pelas telas —
+`lib/store.ts` envolve `videosStore` para isso. Só vídeo em `delivered` tem data, e
+ela é o que coloca a receita do vídeo em um mês. Voltar o card para a esteira limpa a
+data e tira a receita daquele mês junto.
 
 **Datas.** Sempre strings ISO. Campos `*Date` guardam só o dia (`YYYY-MM-DD`);
 `createdAt`/`updatedAt` guardam o instante completo. Use `parseDate` de `lib/utils.ts`

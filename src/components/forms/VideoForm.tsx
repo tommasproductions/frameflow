@@ -29,6 +29,7 @@ import {
   toOptions,
 } from '@/lib/constants'
 import { videosStore } from '@/lib/store'
+import { formatCurrency } from '@/lib/utils'
 import { Priority, VideoStatus, VideoType, type Video } from '@/types'
 
 interface VideoFormValues {
@@ -38,8 +39,10 @@ interface VideoFormValues {
   status: VideoStatus
   priority: Priority
   deadline: string
+  deliveredAt: string
   durationSeconds: string
   value: string
+  cost: string
   estimatedHours: string
   workedHours: string
   notes: string
@@ -53,8 +56,10 @@ function emptyValues(projectId: string): VideoFormValues {
     status: VideoStatus.BRIEFING,
     priority: Priority.MEDIUM,
     deadline: '',
+    deliveredAt: '',
     durationSeconds: '',
     value: '',
+    cost: '',
     estimatedHours: '',
     workedHours: '',
     notes: '',
@@ -69,8 +74,10 @@ function fromVideo(video: Video): VideoFormValues {
     status: video.status,
     priority: video.priority,
     deadline: video.deadline ?? '',
+    deliveredAt: video.deliveredAt ?? '',
     durationSeconds: video.durationSeconds?.toString() ?? '',
     value: String(video.value),
+    cost: String(video.cost),
     estimatedHours: video.estimatedHours?.toString() ?? '',
     workedHours: video.workedHours?.toString() ?? '',
     notes: video.notes ?? '',
@@ -129,6 +136,11 @@ function VideoFormBody({
   const set = <K extends keyof VideoFormValues>(key: K, value: VideoFormValues[K]) =>
     setValues((current) => ({ ...current, [key]: value }))
 
+  // Só vale mostrar o lucro depois que há um valor: antes disso o número seria
+  // sempre "R$ 0,00 negativo", que assusta sem informar nada.
+  const profitPreview =
+    values.value.trim() === '' ? null : num(values.value) - num(values.cost)
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
 
@@ -152,8 +164,13 @@ function VideoFormBody({
       status: values.status,
       priority: values.priority,
       deadline: text(values.deadline),
+      // O store decide a data final: vídeo fora de "entregue" não guarda data, e
+      // uma entrega sem data ganha a de hoje. O que vem daqui é só a correção
+      // manual de quem lançou a entrega no dia errado.
+      deliveredAt: text(values.deliveredAt),
       durationSeconds: numOrNull(values.durationSeconds),
       value: num(values.value),
+      cost: num(values.cost),
       estimatedHours: numOrNull(values.estimatedHours),
       workedHours: numOrNull(values.workedHours),
       notes: text(values.notes),
@@ -179,7 +196,6 @@ function VideoFormBody({
     } else {
       const created = videosStore.create({
         ...shared,
-        cost: 0,
         fileLinks: [],
         checklist: applyStatusToChecklist(values.status, { ...EMPTY_CHECKLIST }),
       })
@@ -287,8 +303,29 @@ function VideoFormBody({
           </Field>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Valor (R$)">
+        {/*
+          A data de entrega só aparece depois que o vídeo chega em "Entregue" —
+          antes disso não existe entrega para datar. O sistema já preencheu com
+          hoje; o campo está aqui para o caso comum de mover o card dias depois
+          da entrega real, que jogaria a receita para o mês errado.
+        */}
+        {values.status === VideoStatus.DELIVERED ? (
+          <section className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label="Entregue em"
+              hint="O mês desta data é o mês em que o valor do vídeo vira receita."
+            >
+              <Input
+                type="date"
+                value={values.deliveredAt}
+                onChange={(event) => set('deliveredAt', event.target.value)}
+              />
+            </Field>
+          </section>
+        ) : null}
+
+        <section className="grid gap-3 sm:grid-cols-2">
+          <Field label="Valor (R$)" hint="O preço do vídeo. É a receita que ele gera.">
             <Input
               type="number"
               min={0}
@@ -297,6 +334,25 @@ function VideoFormBody({
               onChange={(event) => set('value', event.target.value)}
             />
           </Field>
+          <Field
+            label="Custo (R$)"
+            hint={
+              profitPreview === null
+                ? 'Custo direto: freela, trilha, banco de imagens. Se já lançou em Custos, deixe zero.'
+                : `Lucro do vídeo: ${formatCurrency(profitPreview)}.`
+            }
+          >
+            <Input
+              type="number"
+              min={0}
+              step="any"
+              value={values.cost}
+              onChange={(event) => set('cost', event.target.value)}
+            />
+          </Field>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Horas estimadas">
             <Input
               type="number"

@@ -74,9 +74,9 @@ export function ProjectCard({
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5">
         <div>
-          <dt className="text-xs text-ink-faint">Contratado</dt>
+          <dt className="text-xs text-ink-faint">Valor</dt>
           <dd className="tabular text-sm font-semibold text-ink">
-            {formatCurrency(project.contractedValue)}
+            {formatCurrency(metrics.produced)}
           </dd>
         </div>
         <div>

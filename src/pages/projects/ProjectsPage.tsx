@@ -16,7 +16,7 @@ import { useClients } from '@/hooks/useClients'
 import { EMPTY_PROJECT_METRICS, useAllProjectMetrics } from '@/hooks/useProjectMetrics'
 import { useProjects } from '@/hooks/useProjects'
 import { PROJECT_STATUS_LABEL, toOptions } from '@/lib/constants'
-import { cn, deadlineLabel, formatCurrency, matchesQuery, sumBy } from '@/lib/utils'
+import { cn, deadlineLabel, formatCurrency, matchesQuery } from '@/lib/utils'
 import { ProjectStatus, type Project } from '@/types'
 
 type View = 'cards' | 'list'
@@ -75,18 +75,19 @@ export function ProjectsPage() {
   )
 
   const totals = useMemo(() => {
-    const contracted = sumBy(filtered, (project) => project.contractedValue)
+    let produced = 0
     let profit = 0
     let overdueVideos = 0
     let inProduction = 0
     for (const project of filtered) {
       const m = metricsFor(project)
+      produced += m.produced
       profit += m.profit
       overdueVideos += m.overdueCount
       inProduction += m.inProductionCount
     }
     return {
-      contracted,
+      produced,
       profit,
       overdueVideos,
       inProduction,
@@ -136,11 +137,11 @@ export function ProjectsPage() {
     },
     {
       key: 'value',
-      header: 'Contratado',
+      header: 'Valor',
       align: 'right',
-      sortValue: (project) => project.contractedValue,
+      sortValue: (project) => metricsFor(project).produced,
       render: (project) => (
-        <span className="tabular text-ink">{formatCurrency(project.contractedValue)}</span>
+        <span className="tabular text-ink">{formatCurrency(metricsFor(project).produced)}</span>
       ),
     },
     {
@@ -197,10 +198,11 @@ export function ProjectsPage() {
           hint={`${filtered.length} no recorte atual`}
         />
         <MetricCard
-          label="Valor contratado"
-          value={totals.contracted}
+          label="Valor produzido"
+          value={totals.produced}
           format="currency"
           icon={Wallet}
+          hint="soma do valor dos vídeos"
         />
         <MetricCard
           label="Lucro"

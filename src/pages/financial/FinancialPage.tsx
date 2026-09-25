@@ -2,16 +2,18 @@ import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  Clapperboard,
   MoreVertical,
   Pencil,
   Plus,
   Receipt,
   Repeat,
   Trash2,
+  TrendingUp,
   Wallet,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { usePeriod } from '@/app/period'
 import { ProfitChart } from '@/components/charts/ProfitChart'
@@ -41,12 +43,15 @@ import { useContracts } from '@/hooks/useContracts'
 import { useExpenses } from '@/hooks/useExpenses'
 import { usePayments } from '@/hooks/usePayments'
 import { useProjects } from '@/hooks/useProjects'
+import { useVideos } from '@/hooks/useVideos'
 import { logDeleted } from '@/lib/activity'
 import {
   cashSummary,
+  deliveredVideos,
   monthlyRecurringRevenue,
   monthlySeries,
   overduePayments,
+  productionSummary,
   receivableRevenue,
 } from '@/lib/calculations'
 import {
@@ -56,6 +61,7 @@ import {
   PAYMENT_METHOD_LABEL,
   PAYMENT_STATUS_LABEL,
   toOptions,
+  VIDEO_TYPE_LABEL,
 } from '@/lib/constants'
 import {
   cn,
@@ -74,6 +80,7 @@ import {
   type Contract,
   type Expense,
   type Payment,
+  type Video,
 } from '@/types'
 
 /** O que está aberto para exclusão — só um por vez. */
@@ -84,12 +91,14 @@ type Pending =
   | null
 
 export function FinancialPage() {
+  const navigate = useNavigate()
   const { range, previousRange, label, recentMonths } = usePeriod()
   const { payments, remove: removePayment } = usePayments()
   const { expenses, remove: removeExpense } = useExpenses()
   const { contracts, remove: removeContract } = useContracts()
   const { clients, byId: clientById } = useClients()
   const { byId: projectById } = useProjects()
+  const { videos } = useVideos()
 
   const [paymentForm, setPaymentForm] = useState<{ open: boolean; item?: Payment }>({ open: false })
   const [expenseForm, setExpenseForm] = useState<{ open: boolean; item?: Expense }>({ open: false })
@@ -102,16 +111,74 @@ export function FinancialPage() {
 
   const cash = cashSummary(payments, expenses, range)
   const previousCash = cashSummary(payments, expenses, previousRange)
+  const production = productionSummary(videos, expenses, range)
+  const previousProduction = productionSummary(videos, expenses, previousRange)
   const receivable = receivableRevenue(payments)
   const late = overduePayments(payments)
   const overdueAmount = sumBy(late, (payment) => payment.amount)
   const mrr = monthlyRecurringRevenue(contracts)
   const series = useMemo(
-    () => monthlySeries(payments, expenses, recentMonths(DASHBOARD_MONTHS)),
-    [payments, expenses, recentMonths],
+    () => monthlySeries(videos, payments, expenses, recentMonths(DASHBOARD_MONTHS)),
+    [videos, payments, expenses, recentMonths],
+  )
+  const deliveredThisMonth = useMemo(
+    () => sortBy(deliveredVideos(videos, range), (video) => video.deliveredAt, 'desc'),
+    [videos, range],
   )
 
   const clientOptions = clients.map((client) => ({ value: client.id, label: client.name }))
+
+  /* -------------------------- Entregas do mês --------------------------- */
+
+  const deliveredColumns: Column<Video>[] = [
+    {
+      key: 'title',
+      header: 'Vídeo',
+      sortValue: (video) => video.title,
+      render: (video) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium text-ink">{video.title}</p>
+          <p className="truncate text-xs text-ink-faint">
+            {clientById(video.clientId)?.name ?? '—'}
+            {` · ${projectById(video.projectId)?.name ?? '—'}`}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'Formato',
+      hideOnMobile: true,
+      sortValue: (video) => VIDEO_TYPE_LABEL[video.type],
+      render: (video) => VIDEO_TYPE_LABEL[video.type],
+    },
+    {
+      key: 'deliveredAt',
+      header: 'Entregue em',
+      align: 'right',
+      sortValue: (video) => video.deliveredAt ?? '',
+      render: (video) => <span className="tabular">{formatDate(video.deliveredAt)}</span>,
+    },
+    {
+      key: 'cost',
+      header: 'Custo',
+      align: 'right',
+      hideOnMobile: true,
+      sortValue: (video) => video.cost,
+      render: (video) => (
+        <span className="tabular">{video.cost ? formatCurrency(video.cost) : '—'}</span>
+      ),
+    },
+    {
+      key: 'value',
+      header: 'Valor',
+      align: 'right',
+      sortValue: (video) => video.value,
+      render: (video) => (
+        <span className="tabular font-medium text-ink">{formatCurrency(video.value)}</span>
+      ),
+    },
+  ]
 
   /* ------------------------------ Receitas ------------------------------ */
 
@@ -433,45 +500,85 @@ export function FinancialPage() {
         }
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricCard
-          label="Recebido no mês"
-          value={cash.received}
-          previousValue={previousCash.received}
-          format="currency"
-          icon={Wallet}
-        />
-        <MetricCard
-          label="Custos do mês"
-          value={cash.expenses}
-          previousValue={previousCash.expenses}
-          format="currency"
-          trend="down"
-          icon={Receipt}
-        />
-        <MetricCard
-          label="Resultado do mês"
-          value={cash.profit}
-          previousValue={previousCash.profit}
-          format="currency"
-          tone={cash.profit < 0 ? 'danger' : undefined}
-        />
-        <MetricCard
-          label="A receber"
-          value={receivable}
-          format="currency"
-          tone={overdueAmount > 0 ? 'warning' : undefined}
-          hint={
-            overdueAmount > 0 ? `${formatCurrency(overdueAmount)} vencidos` : 'nada vencido'
-          }
-        />
-        <MetricCard
-          label="Recorrência mensal"
-          value={mrr}
-          format="currency"
-          icon={Repeat}
-          hint={`${contracts.filter((c) => c.status === ContractStatus.ACTIVE).length} contratos ativos`}
-        />
+      {/*
+        Duas leituras, nesta ordem e nunca somadas.
+
+        A primeira é o resultado: o que a produção do mês rendeu. A segunda é o
+        caixa: o que entrou na conta. São o mesmo dinheiro em momentos
+        diferentes — o vídeo é entregue em agosto e pago em setembro —, então
+        separá-las visualmente é o que impede alguém de ler R$ 5.600 produzidos
+        mais R$ 4.800 recebidos como R$ 10.400 de faturamento.
+      */}
+      <section className="space-y-2">
+        <h2 className="text-xs font-medium tracking-wide text-ink-faint uppercase">
+          Produção de {label.toLowerCase()}
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <MetricCard
+            label="Produzido no mês"
+            value={production.produced}
+            previousValue={previousProduction.produced}
+            format="currency"
+            icon={Clapperboard}
+            hint={
+              production.delivered === 1
+                ? '1 vídeo entregue'
+                : `${production.delivered} vídeos entregues`
+            }
+          />
+          <MetricCard
+            label="Custos do mês"
+            value={production.expenses}
+            previousValue={previousProduction.expenses}
+            format="currency"
+            trend="down"
+            icon={Receipt}
+            hint={
+              production.videoCost > 0
+                ? `${formatCurrency(production.videoCost)} direto nos vídeos`
+                : 'tudo em lançamentos de custo'
+            }
+          />
+          <MetricCard
+            label="Lucro do mês"
+            value={production.profit}
+            previousValue={previousProduction.profit}
+            format="currency"
+            icon={TrendingUp}
+            tone={production.profit < 0 ? 'danger' : undefined}
+            hint={`Margem de ${formatPercent(production.margin)}`}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-xs font-medium tracking-wide text-ink-faint uppercase">Caixa</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <MetricCard
+            label="Recebido no mês"
+            value={cash.received}
+            previousValue={previousCash.received}
+            format="currency"
+            icon={Wallet}
+            hint="o que entrou na conta"
+          />
+          <MetricCard
+            label="A receber"
+            value={receivable}
+            format="currency"
+            tone={overdueAmount > 0 ? 'warning' : undefined}
+            hint={
+              overdueAmount > 0 ? `${formatCurrency(overdueAmount)} vencidos` : 'nada vencido'
+            }
+          />
+          <MetricCard
+            label="Recorrência mensal"
+            value={mrr}
+            format="currency"
+            icon={Repeat}
+            hint={`${contracts.filter((c) => c.status === ContractStatus.ACTIVE).length} contratos ativos`}
+          />
+        </div>
       </section>
 
       <Tabs defaultValue="overview">
@@ -488,8 +595,10 @@ export function FinancialPage() {
             <Card>
               <CardHeader>
                 <div>
-                  <CardTitle>Receita e custos</CardTitle>
-                  <p className="text-xs text-ink-dim">Últimos 6 meses, por caixa.</p>
+                  <CardTitle>Produção e custos</CardTitle>
+                  <p className="text-xs text-ink-dim">
+                    Últimos 6 meses, pelo valor dos vídeos entregues.
+                  </p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -500,8 +609,8 @@ export function FinancialPage() {
             <Card>
               <CardHeader>
                 <div>
-                  <CardTitle>Resultado</CardTitle>
-                  <p className="text-xs text-ink-dim">Recebido menos custos, mês a mês.</p>
+                  <CardTitle>Lucro</CardTitle>
+                  <p className="text-xs text-ink-dim">Produzido menos custos, mês a mês.</p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -509,6 +618,39 @@ export function FinancialPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/*
+            De onde o lucro do mês saiu, vídeo a vídeo. É a tabela que fecha a
+            conta do cartão "Produzido no mês" — sem ela o número fica sendo
+            apenas um total em que o usuário precisa acreditar.
+          */}
+          <Card>
+            <CardHeader>
+              <div>
+                <CardTitle>Vídeos entregues em {label.toLowerCase()}</CardTitle>
+                <p className="text-xs text-ink-dim">O que formou a receita do mês.</p>
+              </div>
+              <span className="tabular text-xs font-medium text-ink">
+                {formatCurrency(production.produced)}
+              </span>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {deliveredThisMonth.length === 0 ? (
+                <EmptyState
+                  icon={Clapperboard}
+                  title="Nenhum vídeo entregue neste mês"
+                  description="A receita do mês é a soma dos vídeos que chegaram em Entregue. Mova um card para o fim da esteira e ele aparece aqui."
+                />
+              ) : (
+                <DataTable
+                  columns={deliveredColumns}
+                  data={deliveredThisMonth}
+                  getRowId={(video) => video.id}
+                  onRowClick={(video) => navigate(`/videos/${video.id}`)}
+                />
+              )}
+            </CardContent>
+          </Card>
 
           {late.length > 0 ? (
             <Card>

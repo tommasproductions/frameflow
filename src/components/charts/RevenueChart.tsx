@@ -20,7 +20,12 @@ import type { MonthlyPoint } from '@/lib/calculations'
 import { THEME_HEX } from '@/lib/constants'
 
 /**
- * Receita recebida contra custos, mês a mês.
+ * Receita de produção contra custos, mês a mês.
+ *
+ * A barra de receita é o valor dos vídeos entregues no mês, não o que entrou em
+ * caixa: é a mesma base do cartão de lucro, e ler as duas coisas no mesmo
+ * gráfico daria um resultado que não fecha com nenhum dos dois.
+ *
  * O mês selecionado na topbar fica destacado; os anteriores ficam esmaecidos.
  */
 export function RevenueChart({ data, activeKey }: { data: MonthlyPoint[]; activeKey: string }) {
@@ -31,7 +36,7 @@ export function RevenueChart({ data, activeKey }: { data: MonthlyPoint[]; active
         <XAxis dataKey="label" {...AXIS_PROPS} />
         <YAxis {...AXIS_PROPS} tickFormatter={compactAxisValue} width={44} />
         <Tooltip cursor={CURSOR_PROPS} content={<ChartTooltip />} />
-        <Bar dataKey="received" name="Recebido" radius={[3, 3, 0, 0]} maxBarSize={22}>
+        <Bar dataKey="produced" name="Produzido" radius={[3, 3, 0, 0]} maxBarSize={22}>
           {data.map((point) => (
             <Cell
               key={point.key}

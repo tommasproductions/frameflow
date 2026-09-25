@@ -7,20 +7,36 @@ import { useVideos } from '@/hooks/useVideos'
 import { financialSummary, overdueVideos, profitPerHour } from '@/lib/calculations'
 import { VIDEO_CLOSED_STATUSES } from '@/lib/constants'
 import { sumBy } from '@/lib/utils'
-import { TaskStatus, type Expense, type Payment, type Task, type Video } from '@/types'
+import {
+  TaskStatus,
+  VideoStatus,
+  type Expense,
+  type Payment,
+  type Task,
+  type Video,
+} from '@/types'
 
 /**
  * Números consolidados de um projeto.
  *
- * `billed` vem dos pagamentos lançados; `contractedValue` é o que está no
- * cadastro do projeto. Os dois costumam coincidir, e quando não coincidem a
- * diferença é justamente o que ainda falta faturar — por isso ambos aparecem.
+ * `produced` é o que o projeto vale: a soma do preço dos seus vídeos. É dele
+ * que saem lucro e margem. `billed` é quanto disso já virou recebimento
+ * lançado, e a diferença entre os dois (`notBilled`) é o que falta cobrar —
+ * a pergunta que todo projeto entregue faz.
  */
 export interface ProjectMetrics {
+  /** Soma do preço dos vídeos do projeto. */
+  produced: number
+  /** Soma do preço dos vídeos já entregues. */
+  deliveredValue: number
   billed: number
+  notBilled: number
   received: number
   receivable: number
   overdue: number
+  /** Custo direto gravado nos vídeos. */
+  videoCost: number
+  /** Custo total: o dos vídeos mais os lançamentos do projeto. */
   expenses: number
   profit: number
   margin: number
@@ -38,10 +54,14 @@ export interface ProjectMetrics {
 }
 
 export const EMPTY_PROJECT_METRICS: ProjectMetrics = {
+  produced: 0,
+  deliveredValue: 0,
   billed: 0,
+  notBilled: 0,
   received: 0,
   receivable: 0,
   overdue: 0,
+  videoCost: 0,
   expenses: 0,
   profit: 0,
   margin: 0,
@@ -64,17 +84,27 @@ function computeFor(
   videos: Video[],
   tasks: Task[],
 ): ProjectMetrics {
-  const summary = financialSummary(payments, expenses, { projectId })
+  const summary = financialSummary(payments, expenses, videos, { projectId })
   const projectVideos = videos.filter((video) => video.projectId === projectId)
   const projectTasks = tasks.filter((task) => task.projectId === projectId)
   const delivered = projectVideos.filter((v) => VIDEO_CLOSED_STATUSES.includes(v.status)).length
   const hoursWorked = sumBy(projectVideos, (video) => video.workedHours)
 
   return {
-    billed: summary.contracted,
+    produced: summary.produced,
+    // Estritamente `delivered`, não "aprovado ou entregue": é a mesma régua da
+    // receita do mês, e duas definições de "entregue" dariam dois números
+    // diferentes para a mesma palavra na mesma tela.
+    deliveredValue: sumBy(
+      projectVideos.filter((v) => v.status === VideoStatus.DELIVERED),
+      (video) => video.value,
+    ),
+    billed: summary.billed,
+    notBilled: summary.notBilled,
     received: summary.received,
     receivable: summary.receivable,
     overdue: summary.overdue,
+    videoCost: summary.videoCost,
     expenses: summary.expenses,
     profit: summary.profit,
     margin: summary.margin,

@@ -130,6 +130,7 @@ create table if not exists public.videos (
   status           text        not null check (status in ('briefing', 'material_received', 'editing', 'internal_review', 'sent_to_client', 'changes', 'approved', 'delivered')),
   priority         text        not null check (priority in ('low', 'medium', 'high', 'urgent')),
   deadline         date,
+  delivered_at     date,
   duration_seconds integer,
   value            numeric     not null default 0,
   cost             numeric     not null default 0,
@@ -273,6 +274,27 @@ create table if not exists public.notifications (
 );
 
 -- ----------------------------------------------------------------------------
+-- Migrações
+--
+-- O `create table if not exists` acima não altera uma tabela que já existe, e
+-- um banco em produção já existe. Cada bloco aqui traz um banco antigo para o
+-- formato atual e não faz nada num banco recém-criado.
+-- ----------------------------------------------------------------------------
+
+-- `delivered_at` — o dia em que o vídeo foi entregue.
+-- A receita passou a ser reconhecida no mês da entrega, então todo vídeo já
+-- entregue precisa de uma data. Para os que vieram de antes, `updated_at` é a
+-- melhor aproximação disponível: a última vez que o registro mudou é, na
+-- prática, quando ele foi movido para entregue. Quem quiser precisão corrige a
+-- data no formulário do vídeo.
+alter table public.videos add column if not exists delivered_at date;
+
+update public.videos
+   set delivered_at = updated_at::date
+ where delivered_at is null
+   and status = 'delivered';
+
+-- ----------------------------------------------------------------------------
 -- Índices
 --
 -- A política de RLS coloca `user_id` em toda consulta, então ele encabeça os
@@ -283,6 +305,7 @@ create index if not exists idx_projects_client   on public.projects        (user
 create index if not exists idx_videos_client     on public.videos          (user_id, client_id);
 create index if not exists idx_videos_project    on public.videos          (user_id, project_id);
 create index if not exists idx_videos_deadline   on public.videos          (user_id, deadline);
+create index if not exists idx_videos_delivered  on public.videos          (user_id, delivered_at);
 create index if not exists idx_revisions_video   on public.video_revisions (user_id, video_id);
 create index if not exists idx_activities_lead   on public.lead_activities (user_id, lead_id);
 create index if not exists idx_tasks_deadline    on public.tasks           (user_id, deadline);

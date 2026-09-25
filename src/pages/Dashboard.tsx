@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  CalendarClock,
   Clapperboard,
   FolderKanban,
   Receipt,
@@ -35,7 +34,7 @@ export function Dashboard() {
   const { byId: clientById } = useClients()
 
   const activeKey = range.from.slice(0, 7)
-  const profitIsNegative = data.cash.profit < 0
+  const profitIsNegative = data.productionResult.profit < 0
 
   return (
     <div className="space-y-4">
@@ -60,53 +59,64 @@ export function Dashboard() {
         }
       />
 
-      {/* Linha financeira do mês selecionado. */}
+      {/*
+        Linha financeira do mês. Lucro e margem vêm da produção — o valor dos
+        vídeos entregues menos o que custaram —, e o recebido aparece ao lado
+        como caixa. São perguntas diferentes: um vídeo entregue em agosto e pago
+        em setembro conta no lucro de agosto e no caixa de setembro.
+      */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
-          label="Receita recebida"
-          value={data.cash.received}
-          previousValue={data.previousCash.received}
+          label="Produzido no mês"
+          value={data.productionResult.produced}
+          previousValue={data.previousProductionResult.produced}
           format="currency"
-          icon={Wallet}
+          icon={Clapperboard}
+          hint={
+            data.productionResult.delivered === 1
+              ? '1 vídeo entregue'
+              : `${data.productionResult.delivered} vídeos entregues`
+          }
         />
         <MetricCard
           label="Custos"
-          value={data.cash.expenses}
-          previousValue={data.previousCash.expenses}
+          value={data.productionResult.expenses}
+          previousValue={data.previousProductionResult.expenses}
           format="currency"
           trend="down"
           icon={Receipt}
         />
         <MetricCard
           label="Lucro"
-          value={data.cash.profit}
-          previousValue={data.previousCash.profit}
+          value={data.productionResult.profit}
+          previousValue={data.previousProductionResult.profit}
           format="currency"
           tone={profitIsNegative ? 'danger' : undefined}
           icon={profitIsNegative ? TrendingDown : TrendingUp}
         />
         <MetricCard
           label="Margem"
-          value={data.cash.margin}
+          value={data.productionResult.margin}
           format="percentage"
           hint={
-            data.cash.received === 0
-              ? 'sem receita recebida no mês'
-              : `sobre ${formatCurrency(data.cash.received)}`
+            data.productionResult.produced === 0
+              ? 'nenhum vídeo entregue no mês'
+              : `sobre ${formatCurrency(data.productionResult.produced)}`
           }
           tone={profitIsNegative ? 'danger' : undefined}
         />
         <MetricCard
-          label="A receber"
-          value={data.receivable}
+          label="Recebido no mês"
+          value={data.cash.received}
+          previousValue={data.previousCash.received}
           format="currency"
+          icon={Wallet}
           hint={
             data.overdueAmount > 0
-              ? `${formatCurrency(data.overdueAmount)} vencidos`
-              : 'nada vencido'
+              ? `${formatCurrency(data.receivable)} a receber · ${formatCurrency(data.overdueAmount)} vencidos`
+              : `${formatCurrency(data.receivable)} a receber`
           }
           tone={data.overdueAmount > 0 ? 'warning' : undefined}
-          icon={CalendarClock}
         />
       </section>
 
@@ -149,8 +159,10 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Receita e custos</CardTitle>
-              <p className="text-xs text-ink-dim">Últimos 6 meses, por caixa.</p>
+              <CardTitle>Produção e custos</CardTitle>
+              <p className="text-xs text-ink-dim">
+                Últimos 6 meses, pelo valor dos vídeos entregues.
+              </p>
             </div>
           </CardHeader>
           <CardContent>
@@ -162,7 +174,7 @@ export function Dashboard() {
           <CardHeader>
             <div>
               <CardTitle>Lucro</CardTitle>
-              <p className="text-xs text-ink-dim">Receita recebida menos custos do mês.</p>
+              <p className="text-xs text-ink-dim">Produzido menos custos, mês a mês.</p>
             </div>
           </CardHeader>
           <CardContent>

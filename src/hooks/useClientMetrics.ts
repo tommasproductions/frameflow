@@ -10,6 +10,7 @@ import {
   financialSummary,
   monthlyRecurringRevenue,
   profitPerHour,
+  type FinancialSummary,
 } from '@/lib/calculations'
 import { VIDEO_CLOSED_STATUSES } from '@/lib/constants'
 import { sumBy } from '@/lib/utils'
@@ -18,21 +19,13 @@ import { ProjectStatus, type Contract, type Expense, type Payment, type Project,
 /**
  * Números consolidados de um cliente.
  *
- * Rentabilidade usa a receita **contratada** (tudo que não foi cancelado), não
- * a recebida: a pergunta que a carteira responde é "quanto este cliente vale e
- * quanto sobra", não "quanto entrou no caixa este mês".
+ * Rentabilidade usa a receita de **produção** — a soma do preço dos vídeos do
+ * cliente, entregues ou não. A pergunta que a carteira responde é "quanto este
+ * cliente vale e quanto sobra", não "quanto entrou no caixa este mês".
  */
-export interface ClientMetrics {
-  contracted: number
-  received: number
-  receivable: number
-  overdue: number
-  expenses: number
-  profit: number
-  margin: number
+export interface ClientMetrics extends FinancialSummary {
   projectCount: number
   activeProjectCount: number
-  videoCount: number
   deliveredVideoCount: number
   hoursEstimated: number
   hoursWorked: number
@@ -43,16 +36,19 @@ export interface ClientMetrics {
 }
 
 export const EMPTY_CLIENT_METRICS: ClientMetrics = {
-  contracted: 0,
+  produced: 0,
+  billed: 0,
+  notBilled: 0,
   received: 0,
   receivable: 0,
   overdue: 0,
+  videoCost: 0,
   expenses: 0,
   profit: 0,
   margin: 0,
+  videoCount: 0,
   projectCount: 0,
   activeProjectCount: 0,
-  videoCount: 0,
   deliveredVideoCount: 0,
   hoursEstimated: 0,
   hoursWorked: 0,
@@ -69,7 +65,7 @@ function computeFor(
   videos: Video[],
   contracts: Contract[],
 ): ClientMetrics {
-  const summary = financialSummary(payments, expenses, { clientId })
+  const summary = financialSummary(payments, expenses, videos, { clientId })
   const clientProjects = projects.filter((project) => project.clientId === clientId)
   const clientVideos = videos.filter((video) => video.clientId === clientId)
   const hoursWorked = sumBy(clientVideos, (video) => video.workedHours)
@@ -78,12 +74,11 @@ function computeFor(
     ...summary,
     projectCount: clientProjects.length,
     activeProjectCount: clientProjects.filter((p) => p.status === ProjectStatus.ACTIVE).length,
-    videoCount: clientVideos.length,
     deliveredVideoCount: clientVideos.filter((v) => VIDEO_CLOSED_STATUSES.includes(v.status)).length,
     hoursEstimated: sumBy(clientVideos, (video) => video.estimatedHours),
     hoursWorked,
     profitPerHour: profitPerHour(summary.profit, hoursWorked),
-    averageTicket: averageTicket(summary.contracted, clientProjects.length),
+    averageTicket: averageTicket(summary.produced, clientProjects.length),
     mrr: monthlyRecurringRevenue(contracts.filter((c) => c.clientId === clientId)),
   }
 }

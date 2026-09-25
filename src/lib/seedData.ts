@@ -743,8 +743,15 @@ const videos: Video[] = videoSeeds.map((seed) => {
     priority: seed.priority,
     deadline: seed.deadline,
     durationSeconds: seed.durationSeconds,
+    // No cenário demonstrativo o vídeo é entregue no prazo, então a data do
+    // prazo serve como data de entrega. Só vídeo entregue tem data — é ela que
+    // coloca a receita do vídeo em um mês.
+    deliveredAt: seed.status === VideoStatus.DELIVERED ? seed.deadline : null,
     value: seed.value,
-    // Os custos vivem em `expenses`, para não somar duas vezes no resultado.
+    // Zero de propósito: no cenário demonstrativo todo custo está lançado em
+    // `expenses`, e somar os dois contaria a mesma saída duas vezes. O campo
+    // existe para o custo direto que não virou lançamento — um freela pago por
+    // fora, uma trilha comprada para aquele vídeo.
     cost: 0,
     estimatedHours: seed.estimatedHours,
     workedHours: seed.workedHours,
