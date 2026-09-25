@@ -6,6 +6,7 @@ import {
   type CollectionKey,
   type Database,
 } from '@/lib/schema'
+import { VIDEO_CLOSED_STATUSES } from '@/lib/constants'
 import { buildSeedDatabase } from '@/lib/seedData'
 import { generateId, now, today } from '@/lib/utils'
 import { VideoStatus, type Video } from '@/types'
@@ -217,11 +218,11 @@ export const notificationsStore = collection('notifications', 'ntf')
 /* -------------------------------------------------------------------------- */
 
 /**
- * Vídeos carregam uma regra que nenhuma tela precisa lembrar: a data de entrega
- * é do sistema, não do formulário.
+ * Vídeos carregam uma regra que nenhuma tela precisa lembrar: a data de
+ * conclusão é do sistema, não do formulário.
  *
  * Ela é o que liga produção a dinheiro — a receita de um mês é a soma dos vídeos
- * entregues naquele mês. Três caminhos diferentes mexem no status (arrastar o
+ * concluídos naquele mês. Três caminhos diferentes mexem no status (arrastar o
  * card na esteira, o formulário e a tela do vídeo), e bastava um esquecer de
  * preencher a data para o faturamento do mês sair errado. Envolvendo o store,
  * o lugar é um só e não há como escapar dele.
@@ -231,24 +232,29 @@ const videos = collection('videos', 'vid')
 /**
  * A data que o vídeo deve ter depois da escrita.
  *
- * Só vídeo entregue tem data: quando um card volta para a esteira, a receita
- * daquele mês deixa de existir junto. `preferred` é uma data digitada à mão —
- * corrigir uma entrega lançada no dia errado — e ganha das outras.
+ * Concluído é `approved` ou `delivered` — as duas pontas em que o trabalho
+ * acabou. A data nasce na primeira delas e sobrevive à segunda: aprovar em
+ * agosto e entregar em setembro mantém a receita em agosto, porque quem
+ * terminou o serviço foi agosto.
+ *
+ * Fora dessas duas, o vídeo não tem data: quando um card volta para a esteira,
+ * a receita daquele mês volta junto. `preferred` é uma data digitada à mão —
+ * corrigir uma conclusão lançada no dia errado — e ganha das outras.
  */
-function deliveryDateFor(
+function completionDateFor(
   status: VideoStatus,
   preferred: string | null | undefined,
   current: string | null | undefined,
 ): string | null {
-  if (status !== VideoStatus.DELIVERED) return null
+  if (!VIDEO_CLOSED_STATUSES.includes(status)) return null
   return preferred ?? current ?? today()
 }
 
 /**
- * Rascunho de vídeo. `deliveredAt` é opcional justamente porque quem preenche é
+ * Rascunho de vídeo. `completedAt` é opcional justamente porque quem preenche é
  * o store — nenhum formulário deveria precisar saber que o campo existe.
  */
-export type VideoDraft = Omit<Draft<Video>, 'deliveredAt'> & { deliveredAt?: string | null }
+export type VideoDraft = Omit<Draft<Video>, 'completedAt'> & { completedAt?: string | null }
 
 export const videosStore = {
   ...videos,
@@ -256,7 +262,7 @@ export const videosStore = {
   create(draft: VideoDraft): Video {
     return videos.create({
       ...draft,
-      deliveredAt: deliveryDateFor(draft.status, draft.deliveredAt, null),
+      completedAt: completionDateFor(draft.status, draft.completedAt, null),
     })
   },
 
@@ -264,7 +270,7 @@ export const videosStore = {
     return videos.createMany(
       drafts.map((draft) => ({
         ...draft,
-        deliveredAt: deliveryDateFor(draft.status, draft.deliveredAt, null),
+        completedAt: completionDateFor(draft.status, draft.completedAt, null),
       })),
     )
   },
@@ -275,10 +281,10 @@ export const videosStore = {
 
     return videos.update(id, {
       ...patch,
-      deliveredAt: deliveryDateFor(
+      completedAt: completionDateFor(
         patch.status ?? current.status,
-        patch.deliveredAt,
-        current.deliveredAt,
+        patch.completedAt,
+        current.completedAt,
       ),
     })
   },

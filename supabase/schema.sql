@@ -130,7 +130,7 @@ create table if not exists public.videos (
   status           text        not null check (status in ('briefing', 'material_received', 'editing', 'internal_review', 'sent_to_client', 'changes', 'approved', 'delivered')),
   priority         text        not null check (priority in ('low', 'medium', 'high', 'urgent')),
   deadline         date,
-  delivered_at     date,
+  completed_at     date,
   duration_seconds integer,
   value            numeric     not null default 0,
   cost             numeric     not null default 0,
@@ -281,18 +281,42 @@ create table if not exists public.notifications (
 -- formato atual e não faz nada num banco recém-criado.
 -- ----------------------------------------------------------------------------
 
--- `delivered_at` — o dia em que o vídeo foi entregue.
--- A receita passou a ser reconhecida no mês da entrega, então todo vídeo já
--- entregue precisa de uma data. Para os que vieram de antes, `updated_at` é a
--- melhor aproximação disponível: a última vez que o registro mudou é, na
--- prática, quando ele foi movido para entregue. Quem quiser precisão corrige a
--- data no formulário do vídeo.
-alter table public.videos add column if not exists delivered_at date;
+-- `completed_at` — o dia em que o vídeo ficou pronto.
+--
+-- A receita passou a ser reconhecida no mês da conclusão, então todo vídeo que
+-- já terminou precisa de uma data. Concluído aqui é `approved` ou `delivered`:
+-- parar em "Aprovado" é comum, e sem isso um mês inteiro de trabalho aprovado
+-- apareceria como zero faturado.
+--
+-- O `rename` cobre quem rodou a versão anterior deste arquivo, que criou a
+-- coluna com o nome `delivered_at` — só entregue contava naquele momento. Quem
+-- está criando o banco agora já tem `completed_at` e passa direto.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'videos'
+       and column_name = 'delivered_at'
+  ) and not exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'videos'
+       and column_name = 'completed_at'
+  ) then
+    alter table public.videos rename column delivered_at to completed_at;
+  end if;
+end $$;
 
+alter table public.videos add column if not exists completed_at date;
+
+-- Para os vídeos que vieram de antes, `updated_at` é a melhor aproximação
+-- disponível: a última vez que o registro mudou é, na prática, quando ele foi
+-- movido para aprovado ou entregue. Quem quiser precisão corrige a data no
+-- formulário do vídeo. O `is null` protege as datas já corrigidas de uma
+-- segunda execução deste arquivo.
 update public.videos
-   set delivered_at = updated_at::date
- where delivered_at is null
-   and status = 'delivered';
+   set completed_at = updated_at::date
+ where completed_at is null
+   and status in ('approved', 'delivered');
 
 -- ----------------------------------------------------------------------------
 -- Índices
@@ -305,7 +329,7 @@ create index if not exists idx_projects_client   on public.projects        (user
 create index if not exists idx_videos_client     on public.videos          (user_id, client_id);
 create index if not exists idx_videos_project    on public.videos          (user_id, project_id);
 create index if not exists idx_videos_deadline   on public.videos          (user_id, deadline);
-create index if not exists idx_videos_delivered  on public.videos          (user_id, delivered_at);
+create index if not exists idx_videos_completed  on public.videos          (user_id, completed_at);
 create index if not exists idx_revisions_video   on public.video_revisions (user_id, video_id);
 create index if not exists idx_activities_lead   on public.lead_activities (user_id, lead_id);
 create index if not exists idx_tasks_deadline    on public.tasks           (user_id, deadline);

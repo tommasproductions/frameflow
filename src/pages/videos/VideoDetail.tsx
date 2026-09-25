@@ -304,9 +304,9 @@ export function VideoDetail() {
           format="currency"
           icon={Wallet}
           hint={
-            video.deliveredAt
-              ? `entregue em ${formatDate(video.deliveredAt)}`
-              : 'ainda não entregue'
+            video.completedAt
+              ? `concluído em ${formatDate(video.completedAt)}`
+              : 'ainda em produção'
           }
         />
         <MetricCard

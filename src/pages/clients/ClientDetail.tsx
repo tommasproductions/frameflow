@@ -518,8 +518,8 @@ export function ClientDetail() {
               hint={`${metrics.projectCount} no total`}
             />
             <MetricCard
-              label="Vídeos entregues"
-              value={metrics.deliveredVideoCount}
+              label="Vídeos concluídos"
+              value={metrics.completedVideoCount}
               icon={Clapperboard}
               hint={`${metrics.videoCount} no total`}
             />

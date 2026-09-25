@@ -33,8 +33,8 @@ import type { Lead, LeadStage, Payment, Task, Video, VideoStatus } from '@/types
 
 export interface DashboardData {
   /**
-   * Resultado da produção do mês e do mês anterior — vídeos entregues menos o
-   * que custaram. É a leitura de lucro do sistema.
+   * Resultado da produção do mês e do mês anterior — vídeos concluídos menos
+   * o que custaram. É a leitura de lucro do sistema.
    */
   productionResult: ProductionSummary
   previousProductionResult: ProductionSummary

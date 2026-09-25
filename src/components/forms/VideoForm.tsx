@@ -24,6 +24,7 @@ import {
   applyStatusToChecklist,
   EMPTY_CHECKLIST,
   PRIORITY_LABEL,
+  VIDEO_CLOSED_STATUSES,
   VIDEO_STATUS_LABEL,
   VIDEO_TYPE_LABEL,
   toOptions,
@@ -39,7 +40,7 @@ interface VideoFormValues {
   status: VideoStatus
   priority: Priority
   deadline: string
-  deliveredAt: string
+  completedAt: string
   durationSeconds: string
   value: string
   cost: string
@@ -56,7 +57,7 @@ function emptyValues(projectId: string): VideoFormValues {
     status: VideoStatus.BRIEFING,
     priority: Priority.MEDIUM,
     deadline: '',
-    deliveredAt: '',
+    completedAt: '',
     durationSeconds: '',
     value: '',
     cost: '',
@@ -74,7 +75,7 @@ function fromVideo(video: Video): VideoFormValues {
     status: video.status,
     priority: video.priority,
     deadline: video.deadline ?? '',
-    deliveredAt: video.deliveredAt ?? '',
+    completedAt: video.completedAt ?? '',
     durationSeconds: video.durationSeconds?.toString() ?? '',
     value: String(video.value),
     cost: String(video.cost),
@@ -164,10 +165,10 @@ function VideoFormBody({
       status: values.status,
       priority: values.priority,
       deadline: text(values.deadline),
-      // O store decide a data final: vídeo fora de "entregue" não guarda data, e
-      // uma entrega sem data ganha a de hoje. O que vem daqui é só a correção
-      // manual de quem lançou a entrega no dia errado.
-      deliveredAt: text(values.deliveredAt),
+      // O store decide a data final: vídeo que não terminou não guarda data, e
+      // uma conclusão sem data ganha a de hoje. O que vem daqui é só a correção
+      // manual de quem lançou a conclusão no dia errado.
+      completedAt: text(values.completedAt),
       durationSeconds: numOrNull(values.durationSeconds),
       value: num(values.value),
       cost: num(values.cost),
@@ -304,21 +305,21 @@ function VideoFormBody({
         </section>
 
         {/*
-          A data de entrega só aparece depois que o vídeo chega em "Entregue" —
-          antes disso não existe entrega para datar. O sistema já preencheu com
-          hoje; o campo está aqui para o caso comum de mover o card dias depois
-          da entrega real, que jogaria a receita para o mês errado.
+          A data de conclusão só aparece depois que o vídeo chega em "Aprovado"
+          ou "Entregue" — antes disso não há o que datar. O sistema já preencheu
+          com hoje; o campo está aqui para o caso comum de mover o card dias
+          depois de terminar, que jogaria a receita para o mês errado.
         */}
-        {values.status === VideoStatus.DELIVERED ? (
+        {VIDEO_CLOSED_STATUSES.includes(values.status) ? (
           <section className="grid gap-3 sm:grid-cols-2">
             <Field
-              label="Entregue em"
+              label="Concluído em"
               hint="O mês desta data é o mês em que o valor do vídeo vira receita."
             >
               <Input
                 type="date"
-                value={values.deliveredAt}
-                onChange={(event) => set('deliveredAt', event.target.value)}
+                value={values.completedAt}
+                onChange={(event) => set('completedAt', event.target.value)}
               />
             </Field>
           </section>

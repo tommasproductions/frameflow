@@ -20,13 +20,13 @@ import { ProjectStatus, type Contract, type Expense, type Payment, type Project,
  * Números consolidados de um cliente.
  *
  * Rentabilidade usa a receita de **produção** — a soma do preço dos vídeos do
- * cliente, entregues ou não. A pergunta que a carteira responde é "quanto este
+ * cliente, concluídos ou não. A pergunta que a carteira responde é "quanto este
  * cliente vale e quanto sobra", não "quanto entrou no caixa este mês".
  */
 export interface ClientMetrics extends FinancialSummary {
   projectCount: number
   activeProjectCount: number
-  deliveredVideoCount: number
+  completedVideoCount: number
   hoursEstimated: number
   hoursWorked: number
   profitPerHour: number | null
@@ -49,7 +49,7 @@ export const EMPTY_CLIENT_METRICS: ClientMetrics = {
   videoCount: 0,
   projectCount: 0,
   activeProjectCount: 0,
-  deliveredVideoCount: 0,
+  completedVideoCount: 0,
   hoursEstimated: 0,
   hoursWorked: 0,
   profitPerHour: null,
@@ -74,7 +74,7 @@ function computeFor(
     ...summary,
     projectCount: clientProjects.length,
     activeProjectCount: clientProjects.filter((p) => p.status === ProjectStatus.ACTIVE).length,
-    deliveredVideoCount: clientVideos.filter((v) => VIDEO_CLOSED_STATUSES.includes(v.status)).length,
+    completedVideoCount: clientVideos.filter((v) => VIDEO_CLOSED_STATUSES.includes(v.status)).length,
     hoursEstimated: sumBy(clientVideos, (video) => video.estimatedHours),
     hoursWorked,
     profitPerHour: profitPerHour(summary.profit, hoursWorked),

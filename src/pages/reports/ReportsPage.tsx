@@ -523,9 +523,9 @@ export function ReportsPage() {
               value={productionResult.produced}
               format="currency"
               hint={
-                productionResult.delivered === 1
-                  ? '1 vídeo entregue'
-                  : `${productionResult.delivered} vídeos entregues`
+                productionResult.completed === 1
+                  ? '1 vídeo concluído'
+                  : `${productionResult.completed} vídeos concluídos`
               }
             />
             <MetricCard
@@ -559,7 +559,7 @@ export function ReportsPage() {
               <div>
                 <CardTitle>Produção e custos — 12 meses</CardTitle>
                 <p className="text-xs text-ink-dim">
-                  Receita pelo valor dos vídeos entregues no mês; custos pela data do lançamento.
+                  Receita pelo valor dos vídeos concluídos no mês; custos pela data do lançamento.
                 </p>
               </div>
             </CardHeader>
@@ -573,7 +573,7 @@ export function ReportsPage() {
               <div>
                 <CardTitle>Lucro — 12 meses</CardTitle>
                 <p className="text-xs text-ink-dim">
-                  Meses negativos acontecem quando o custo cai num mês sem entrega.
+                  Meses negativos acontecem quando o custo cai num mês sem conclusão.
                 </p>
               </div>
             </CardHeader>

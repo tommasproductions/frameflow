@@ -22,7 +22,7 @@ import { THEME_HEX } from '@/lib/constants'
 /**
  * Receita de produção contra custos, mês a mês.
  *
- * A barra de receita é o valor dos vídeos entregues no mês, não o que entrou em
+ * A barra de receita é o valor dos vídeos concluídos no mês, não o que entrou em
  * caixa: é a mesma base do cartão de lucro, e ler as duas coisas no mesmo
  * gráfico daria um resultado que não fecha com nenhum dos dois.
  *

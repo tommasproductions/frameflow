@@ -10,7 +10,6 @@ import {
   PaymentStatus,
   ProjectStatus,
   TaskStatus,
-  VideoStatus,
   type Contract,
   type DateRange,
   type Expense,
@@ -37,8 +36,9 @@ import {
  * Duas leituras saem daí, e elas respondem perguntas diferentes:
  *
  *   - **produção** — quanto foi produzido e quanto sobrou disso.
- *     Receita = soma do valor dos vídeos. Num período, só os vídeos entregues
- *     dentro dele (pela data de entrega). É a leitura de resultado.
+ *     Receita = soma do valor dos vídeos. Num período, só os concluídos dentro
+ *     dele — aprovados ou entregues, pela data em `completedAt`. É a leitura
+ *     de resultado.
  *   - **caixa** — quanto entrou e quanto saiu da conta no período.
  *     Vem dos recebimentos com status `paid`. É a leitura de fluxo.
  *
@@ -96,28 +96,36 @@ function videoInScope(video: Video, filter?: ScopeFilter): boolean {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * O vídeo já terminou? `approved` e `delivered` são as duas pontas em que o
+ * trabalho acabou, e as duas contam como receita — parar em "Aprovado" é
+ * comum, e não seria razoável que um mês inteiro de trabalho aprovado
+ * aparecesse como zero faturado.
+ */
+function isCompleted(video: Video): boolean {
+  return VIDEO_CLOSED_STATUSES.includes(video.status)
+}
+
+/**
  * Os vídeos que respondem pela receita de um recorte.
  *
  * Sem `dateRange`, são todos os vídeos do escopo — a pergunta é "quanto este
  * projeto vale", e um vídeo ainda na esteira já faz parte desse valor.
  *
- * Com `dateRange`, são só os entregues dentro do intervalo. Aí a pergunta é
- * "quanto rendeu este mês", e o que ainda não foi entregue não rendeu nada.
+ * Com `dateRange`, são só os concluídos dentro do intervalo. Aí a pergunta é
+ * "quanto rendeu este mês", e o que ainda está na esteira não rendeu nada.
  */
 export function scopedVideos(videos: Video[], filters?: ScopeFilter): Video[] {
   const range = filters?.dateRange
   return videos.filter((video) => {
     if (!videoInScope(video, filters)) return false
     if (!range) return true
-    return video.status === VideoStatus.DELIVERED && inRange(video.deliveredAt, range)
+    return isCompleted(video) && inRange(video.completedAt, range)
   })
 }
 
-/** Vídeos entregues dentro do intervalo, na ordem em que estavam. */
-export function deliveredVideos(videos: Video[], range: DateRange): Video[] {
-  return videos.filter(
-    (video) => video.status === VideoStatus.DELIVERED && inRange(video.deliveredAt, range),
-  )
+/** Vídeos concluídos dentro do intervalo, na ordem em que estavam. */
+export function completedVideos(videos: Video[], range: DateRange): Video[] {
+  return videos.filter((video) => isCompleted(video) && inRange(video.completedAt, range))
 }
 
 /* -------------------------------------------------------------------------- */
@@ -375,8 +383,9 @@ export interface FinancialSummary {
   profit: number
   margin: number
   /**
-   * Produzido menos o que já virou cobrança. Positivo significa trabalho
-   * entregue que ainda não foi lançado como recebimento.
+   * Produzido menos o que já virou cobrança. Positivo significa trabalho feito
+   * que ainda não foi lançado como recebimento; negativo, cobrança acima do que
+   * os vídeos somam — quase sempre vídeo que falta cadastrar.
    */
   notBilled: number
 }
@@ -422,13 +431,13 @@ export interface MonthlyPoint {
   key: string
   /** Rótulo curto: "ago". */
   label: string
-  /** Receita de produção: vídeos entregues no mês. */
+  /** Receita de produção: vídeos concluídos no mês. */
   produced: number
-  /** Vídeos entregues no mês. */
-  delivered: number
+  /** Vídeos concluídos no mês. */
+  completed: number
   /** Caixa que entrou no mês — a outra leitura, para comparação. */
   received: number
-  /** Custo dos vídeos entregues mais os lançamentos com data no mês. */
+  /** Custo dos vídeos concluídos mais os lançamentos com data no mês. */
   expenses: number
   /** `produced` − `expenses`. */
   profit: number
@@ -452,7 +461,7 @@ export function monthlySeries(
       key: range.from.slice(0, 7),
       label: month.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
       produced: production.produced,
-      delivered: production.delivered,
+      completed: production.completed,
       received: paidRevenue(payments, { dateRange: range }),
       expenses: production.expenses,
       profit: production.profit,
@@ -462,10 +471,10 @@ export function monthlySeries(
 }
 
 export interface ProductionSummary {
-  /** Soma do preço dos vídeos entregues no período. */
+  /** Soma do preço dos vídeos concluídos no período. */
   produced: number
-  /** Quantos vídeos foram entregues. */
-  delivered: number
+  /** Quantos vídeos foram concluídos. */
+  completed: number
   /** Custo direto desses vídeos. */
   videoCost: number
   /** Lançamentos de custo com data no período. */
@@ -478,7 +487,7 @@ export interface ProductionSummary {
 }
 
 /**
- * Resultado da produção de um período: o que foi entregue menos o que custou.
+ * Resultado da produção de um período: o que foi concluído menos o que custou.
  * É o cartão de lucro do mês — a leitura que o sistema trata como resultado.
  */
 export function productionSummary(
@@ -486,16 +495,16 @@ export function productionSummary(
   expenses: Expense[],
   range: DateRange,
 ): ProductionSummary {
-  const delivered = deliveredVideos(videos, range)
-  const produced = sumBy(delivered, (video) => video.value)
-  const direct = sumBy(delivered, (video) => video.cost)
+  const completed = completedVideos(videos, range)
+  const produced = sumBy(completed, (video) => video.value)
+  const direct = sumBy(completed, (video) => video.cost)
   const logged = totalExpenses(expenses, { dateRange: range })
   const cost = direct + logged
   const result = profit(produced, cost)
 
   return {
     produced,
-    delivered: delivered.length,
+    completed: completed.length,
     videoCost: direct,
     loggedCost: logged,
     expenses: cost,

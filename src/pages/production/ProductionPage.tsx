@@ -28,7 +28,7 @@ import { useVideoRevisions } from '@/hooks/useVideoRevisions'
 import { useVideos } from '@/hooks/useVideos'
 import { logStatusChange } from '@/lib/activity'
 import {
-  deliveredVideos,
+  completedVideos,
   hoursSummary,
   overdueVideos,
   videosInProduction,
@@ -70,11 +70,11 @@ export function ProductionPage() {
   const [view, setView] = useState<View>('kanban')
   const [formOpen, setFormOpen] = useState(false)
 
-  // Receita que a esteira gerou no mês da topbar: só os vídeos entregues dentro
-  // dele, a mesma base do lucro no Financeiro.
-  const deliveredThisMonth = useMemo(() => {
-    const delivered = deliveredVideos(videos, range)
-    return { count: delivered.length, produced: sumBy(delivered, (video) => video.value) }
+  // Receita que a esteira gerou no mês da topbar: só os vídeos concluídos
+  // dentro dele, a mesma base do lucro no Financeiro.
+  const completedThisMonth = useMemo(() => {
+    const completed = completedVideos(videos, range)
+    return { count: completed.length, produced: sumBy(completed, (video) => video.value) }
   }, [videos, range])
 
   const statusFilter = searchParams.get('status') ?? ''
@@ -303,14 +303,14 @@ export function ProductionPage() {
           ao fim da esteira.
         */}
         <MetricCard
-          label="Entregue no mês"
-          value={deliveredThisMonth.produced}
+          label="Concluído no mês"
+          value={completedThisMonth.produced}
           format="currency"
           icon={TrendingUp}
           hint={
-            deliveredThisMonth.count === 1
+            completedThisMonth.count === 1
               ? `1 vídeo em ${label.toLowerCase()}`
-              : `${deliveredThisMonth.count} vídeos em ${label.toLowerCase()}`
+              : `${completedThisMonth.count} vídeos em ${label.toLowerCase()}`
           }
         />
       </section>

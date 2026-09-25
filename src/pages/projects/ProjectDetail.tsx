@@ -455,7 +455,7 @@ export function ProjectDetail() {
               hint={
                 metrics.videoCount === 0
                   ? 'nenhum vídeo cadastrado ainda'
-                  : `${metrics.videoCount} vídeos · ${formatCurrency(metrics.deliveredValue)} já entregues`
+                  : `${metrics.videoCount} vídeos · ${formatCurrency(metrics.completedValue)} concluídos`
               }
               tone={metrics.videoCount === 0 ? 'warning' : undefined}
             />
@@ -494,8 +494,8 @@ export function ProjectDetail() {
 
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              label="Vídeos entregues"
-              value={metrics.deliveredCount}
+              label="Vídeos concluídos"
+              value={metrics.completedCount}
               icon={Clapperboard}
               hint={`${metrics.videoCount} no total`}
             />
@@ -531,7 +531,7 @@ export function ProjectDetail() {
               <div className="min-w-0 flex-1">
                 <CardTitle>Progresso da produção</CardTitle>
                 <p className="text-xs text-ink-dim">
-                  {metrics.deliveredCount} de {metrics.videoCount} vídeos aprovados ou entregues.
+                  {metrics.completedCount} de {metrics.videoCount} vídeos aprovados ou entregues.
                 </p>
               </div>
               <span className="tabular shrink-0 text-xs text-ink-faint">
@@ -625,6 +625,12 @@ export function ProjectDetail() {
               format="currency"
               hint="soma do valor dos vídeos"
             />
+            {/*
+              `notBilled` negativo não é "tudo lançado": é cobrança acima do que
+              os vídeos somam, quase sempre vídeo que falta cadastrar. Tratar os
+              dois casos com a mesma frase esconderia exatamente o que precisa
+              de atenção.
+            */}
             <MetricCard
               label="Faturado"
               value={metrics.billed}
@@ -632,9 +638,11 @@ export function ProjectDetail() {
               hint={
                 metrics.notBilled > 0
                   ? `${formatCurrency(metrics.notBilled)} a cobrar`
-                  : 'tudo lançado'
+                  : metrics.notBilled < 0
+                    ? `${formatCurrency(Math.abs(metrics.notBilled))} cobrados a mais`
+                    : 'tudo lançado'
               }
-              tone={metrics.notBilled > 0 ? 'warning' : undefined}
+              tone={metrics.notBilled !== 0 ? 'warning' : undefined}
             />
             <MetricCard label="Recebido" value={metrics.received} format="currency" />
             <MetricCard

@@ -61,7 +61,7 @@ export function ProjectCard({
       <div className="mt-4 space-y-1.5">
         <div className="flex items-baseline justify-between gap-2 text-xs">
           <span className="text-ink-faint">
-            {metrics.deliveredCount} de {metrics.videoCount}{' '}
+            {metrics.completedCount} de {metrics.videoCount}{' '}
             {metrics.videoCount === 1 ? 'vídeo' : 'vídeos'}
           </span>
           <span className="tabular text-ink-dim">{Math.round(metrics.progress)}%</span>

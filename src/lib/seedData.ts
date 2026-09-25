@@ -3,6 +3,7 @@ import {
   applyStatusToChecklist,
   LEAD_STAGE_ORDER,
   LEAD_STAGE_PROBABILITY,
+  VIDEO_CLOSED_STATUSES,
 } from '@/lib/constants'
 import {
   ActivityAction,
@@ -743,10 +744,10 @@ const videos: Video[] = videoSeeds.map((seed) => {
     priority: seed.priority,
     deadline: seed.deadline,
     durationSeconds: seed.durationSeconds,
-    // No cenário demonstrativo o vídeo é entregue no prazo, então a data do
-    // prazo serve como data de entrega. Só vídeo entregue tem data — é ela que
-    // coloca a receita do vídeo em um mês.
-    deliveredAt: seed.status === VideoStatus.DELIVERED ? seed.deadline : null,
+    // No cenário demonstrativo o vídeo termina no prazo, então a data do prazo
+    // serve como data de conclusão. Só vídeo aprovado ou entregue tem data — é
+    // ela que coloca a receita do vídeo em um mês.
+    completedAt: VIDEO_CLOSED_STATUSES.includes(seed.status) ? seed.deadline : null,
     value: seed.value,
     // Zero de propósito: no cenário demonstrativo todo custo está lançado em
     // `expenses`, e somar os dois contaria a mesma saída duas vezes. O campo

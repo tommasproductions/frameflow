@@ -31,7 +31,7 @@ export function useFinancials(filters?: ScopeFilter): FinancialSummary {
   }, [payments, expenses, videos, key])
 }
 
-/** Resultado da produção do período: entregue menos o que custou produzir. */
+/** Resultado da produção do período: concluído menos o que custou produzir. */
 export function useProduction({ from, to }: DateRange): ProductionSummary {
   const { videos } = useVideos()
   const { expenses } = useExpenses()

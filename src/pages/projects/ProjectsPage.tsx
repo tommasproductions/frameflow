@@ -129,7 +129,7 @@ export function ProjectsPage() {
           <div className="space-y-1">
             <Progress value={m.progress} tone={m.progress === 100 ? 'success' : 'accent'} />
             <span className="tabular text-xs text-ink-faint">
-              {m.deliveredCount}/{m.videoCount} vídeos
+              {m.completedCount}/{m.videoCount} vídeos
             </span>
           </div>
         )

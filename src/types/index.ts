@@ -283,7 +283,7 @@ export interface Video {
    * chega em `delivered` e limpa quando ele volta para a esteira — e um video
    * so vira receita no mes desta data.
    */
-  deliveredAt: string | null
+  completedAt: string | null
   durationSeconds: number | null
   /** Preco cobrado pelo video. E a receita do sistema inteiro. */
   value: number

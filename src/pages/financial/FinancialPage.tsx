@@ -47,7 +47,7 @@ import { useVideos } from '@/hooks/useVideos'
 import { logDeleted } from '@/lib/activity'
 import {
   cashSummary,
-  deliveredVideos,
+  completedVideos,
   monthlyRecurringRevenue,
   monthlySeries,
   overduePayments,
@@ -121,16 +121,16 @@ export function FinancialPage() {
     () => monthlySeries(videos, payments, expenses, recentMonths(DASHBOARD_MONTHS)),
     [videos, payments, expenses, recentMonths],
   )
-  const deliveredThisMonth = useMemo(
-    () => sortBy(deliveredVideos(videos, range), (video) => video.deliveredAt, 'desc'),
+  const completedThisMonth = useMemo(
+    () => sortBy(completedVideos(videos, range), (video) => video.completedAt, 'desc'),
     [videos, range],
   )
 
   const clientOptions = clients.map((client) => ({ value: client.id, label: client.name }))
 
-  /* -------------------------- Entregas do mês --------------------------- */
+  /* ------------------------- Conclusões do mês -------------------------- */
 
-  const deliveredColumns: Column<Video>[] = [
+  const completedColumns: Column<Video>[] = [
     {
       key: 'title',
       header: 'Vídeo',
@@ -153,11 +153,11 @@ export function FinancialPage() {
       render: (video) => VIDEO_TYPE_LABEL[video.type],
     },
     {
-      key: 'deliveredAt',
-      header: 'Entregue em',
+      key: 'completedAt',
+      header: 'Concluído em',
       align: 'right',
-      sortValue: (video) => video.deliveredAt ?? '',
-      render: (video) => <span className="tabular">{formatDate(video.deliveredAt)}</span>,
+      sortValue: (video) => video.completedAt ?? '',
+      render: (video) => <span className="tabular">{formatDate(video.completedAt)}</span>,
     },
     {
       key: 'cost',
@@ -521,9 +521,9 @@ export function FinancialPage() {
             format="currency"
             icon={Clapperboard}
             hint={
-              production.delivered === 1
-                ? '1 vídeo entregue'
-                : `${production.delivered} vídeos entregues`
+              production.completed === 1
+                ? '1 vídeo concluído'
+                : `${production.completed} vídeos concluídos`
             }
           />
           <MetricCard
@@ -597,7 +597,7 @@ export function FinancialPage() {
                 <div>
                   <CardTitle>Produção e custos</CardTitle>
                   <p className="text-xs text-ink-dim">
-                    Últimos 6 meses, pelo valor dos vídeos entregues.
+                    Últimos 6 meses, pelo valor dos vídeos concluídos.
                   </p>
                 </div>
               </CardHeader>
@@ -627,7 +627,7 @@ export function FinancialPage() {
           <Card>
             <CardHeader>
               <div>
-                <CardTitle>Vídeos entregues em {label.toLowerCase()}</CardTitle>
+                <CardTitle>Vídeos concluídos em {label.toLowerCase()}</CardTitle>
                 <p className="text-xs text-ink-dim">O que formou a receita do mês.</p>
               </div>
               <span className="tabular text-xs font-medium text-ink">
@@ -635,16 +635,16 @@ export function FinancialPage() {
               </span>
             </CardHeader>
             <CardContent className="pt-0">
-              {deliveredThisMonth.length === 0 ? (
+              {completedThisMonth.length === 0 ? (
                 <EmptyState
                   icon={Clapperboard}
-                  title="Nenhum vídeo entregue neste mês"
-                  description="A receita do mês é a soma dos vídeos que chegaram em Entregue. Mova um card para o fim da esteira e ele aparece aqui."
+                  title="Nenhum vídeo concluído neste mês"
+                  description="A receita do mês é a soma dos vídeos que chegaram em Aprovado ou Entregue. Mova um card para o fim da esteira e ele aparece aqui."
                 />
               ) : (
                 <DataTable
-                  columns={deliveredColumns}
-                  data={deliveredThisMonth}
+                  columns={completedColumns}
+                  data={completedThisMonth}
                   getRowId={(video) => video.id}
                   onRowClick={(video) => navigate(`/videos/${video.id}`)}
                 />

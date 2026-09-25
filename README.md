@@ -103,14 +103,14 @@ faturamento, e a soma deles é o que um projeto, um cliente ou um mês valem —
 não vende "um projeto", vende vídeos. Daí saem duas leituras, que respondem perguntas
 diferentes e **nunca se somam**:
 
-- **produção** — soma do valor dos vídeos. Num período, só os que foram entregues
-  dentro dele, pela data em `deliveredAt`. É a base de lucro e margem em todo o
-  sistema: dashboard, financeiro, relatórios, projeto e cliente.
+- **produção** — soma do valor dos vídeos. Num período, só os concluídos dentro dele,
+  pela data em `completedAt`. É a base de lucro e margem em todo o sistema: dashboard,
+  financeiro, relatórios, projeto e cliente.
 - **caixa** — recebimentos com status `paid`, pela data do pagamento. Responde
   "quanto entrou na conta", não "quanto sobrou".
 
 Somar as duas dobraria o faturamento: são o mesmo dinheiro em momentos diferentes —
-o vídeo entregue em agosto e pago em setembro entra no lucro de agosto e no caixa de
+o vídeo concluído em agosto e pago em setembro entra no lucro de agosto e no caixa de
 setembro. Por isso as telas as mostram em blocos separados e rotulados.
 
 Os recebimentos (`Payment`) deixaram de ser base de lucro e respondem só o que já foi
@@ -122,10 +122,15 @@ próprio vídeo (`video.cost` — freela, trilha, banco de imagens) e os lançam
 `Expense`. São registros diferentes de propósito; lançar a mesma saída nos dois conta
 duas vezes.
 
-**Data de entrega.** `deliveredAt` é preenchido pelo store, nunca pelas telas —
-`lib/store.ts` envolve `videosStore` para isso. Só vídeo em `delivered` tem data, e
-ela é o que coloca a receita do vídeo em um mês. Voltar o card para a esteira limpa a
-data e tira a receita daquele mês junto.
+**Concluído.** `approved` e `delivered` — as duas pontas em que o trabalho acabou —
+contam como receita. É o mesmo par de `VIDEO_CLOSED_STATUSES`: parar em "Aprovado" é
+comum, e um mês inteiro de trabalho aprovado não pode aparecer como zero faturado.
+
+**Data de conclusão.** `completedAt` é preenchido pelo store, nunca pelas telas —
+`lib/store.ts` envolve `videosStore` para isso. Ela nasce quando o vídeo chega a
+`approved` e sobrevive à passagem para `delivered`: aprovar em agosto e entregar em
+setembro mantém a receita em agosto, porque quem terminou o serviço foi agosto. Voltar
+o card para a esteira limpa a data e tira a receita daquele mês junto.
 
 **Datas.** Sempre strings ISO. Campos `*Date` guardam só o dia (`YYYY-MM-DD`);
 `createdAt`/`updatedAt` guardam o instante completo. Use `parseDate` de `lib/utils.ts`

@@ -61,9 +61,9 @@ export function Dashboard() {
 
       {/*
         Linha financeira do mês. Lucro e margem vêm da produção — o valor dos
-        vídeos entregues menos o que custaram —, e o recebido aparece ao lado
-        como caixa. São perguntas diferentes: um vídeo entregue em agosto e pago
-        em setembro conta no lucro de agosto e no caixa de setembro.
+        vídeos concluídos menos o que custaram —, e o recebido aparece ao lado
+        como caixa. São perguntas diferentes: um vídeo concluído em agosto e
+        pago em setembro conta no lucro de agosto e no caixa de setembro.
       */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
@@ -73,9 +73,9 @@ export function Dashboard() {
           format="currency"
           icon={Clapperboard}
           hint={
-            data.productionResult.delivered === 1
-              ? '1 vídeo entregue'
-              : `${data.productionResult.delivered} vídeos entregues`
+            data.productionResult.completed === 1
+              ? '1 vídeo concluído'
+              : `${data.productionResult.completed} vídeos concluídos`
           }
         />
         <MetricCard
@@ -100,7 +100,7 @@ export function Dashboard() {
           format="percentage"
           hint={
             data.productionResult.produced === 0
-              ? 'nenhum vídeo entregue no mês'
+              ? 'nenhum vídeo concluído no mês'
               : `sobre ${formatCurrency(data.productionResult.produced)}`
           }
           tone={profitIsNegative ? 'danger' : undefined}
@@ -161,7 +161,7 @@ export function Dashboard() {
             <div>
               <CardTitle>Produção e custos</CardTitle>
               <p className="text-xs text-ink-dim">
-                Últimos 6 meses, pelo valor dos vídeos entregues.
+                Últimos 6 meses, pelo valor dos vídeos concluídos.
               </p>
             </div>
           </CardHeader>
