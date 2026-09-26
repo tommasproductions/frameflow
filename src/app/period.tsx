@@ -25,15 +25,21 @@ interface PeriodValue {
 
 const PeriodContext = createContext<PeriodValue | null>(null)
 
-/** Data em que o cenário demonstrativo está ancorado. */
-const DEFAULT_MONTH = new Date(2026, 7, 1)
-
 function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
 
 export function PeriodProvider({ children }: { children: ReactNode }) {
-  const [month, setMonthState] = useState(() => startOfMonth(DEFAULT_MONTH))
+  /*
+   * O mês de hoje.
+   *
+   * Isto já foi uma data fixa, ancorada no mês do cenário demonstrativo — útil
+   * enquanto o sistema só tinha o seed, e errado a partir do momento em que
+   * alguém passou a usá-lo de verdade: o sistema abria num mês passado e o
+   * trabalho do mês corrente não aparecia em lugar nenhum, o que parece dado
+   * faltando e não período errado.
+   */
+  const [month, setMonthState] = useState(() => startOfMonth(new Date()))
 
   const setMonth = useCallback((next: Date) => setMonthState(startOfMonth(next)), [])
 

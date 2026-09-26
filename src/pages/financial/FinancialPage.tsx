@@ -48,6 +48,7 @@ import { logDeleted } from '@/lib/activity'
 import {
   cashSummary,
   completedVideos,
+  completionDate,
   monthlyRecurringRevenue,
   monthlySeries,
   overduePayments,
@@ -122,7 +123,7 @@ export function FinancialPage() {
     [videos, payments, expenses, recentMonths],
   )
   const completedThisMonth = useMemo(
-    () => sortBy(completedVideos(videos, range), (video) => video.completedAt, 'desc'),
+    () => sortBy(completedVideos(videos, range), (video) => completionDate(video), 'desc'),
     [videos, range],
   )
 
@@ -156,8 +157,8 @@ export function FinancialPage() {
       key: 'completedAt',
       header: 'Concluído em',
       align: 'right',
-      sortValue: (video) => video.completedAt ?? '',
-      render: (video) => <span className="tabular">{formatDate(video.completedAt)}</span>,
+      sortValue: (video) => completionDate(video) ?? '',
+      render: (video) => <span className="tabular">{formatDate(completionDate(video))}</span>,
     },
     {
       key: 'cost',

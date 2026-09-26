@@ -66,6 +66,24 @@ export const EMPTY_DATABASE: Database = {
   meta: { version: SCHEMA_VERSION, seededAt: null, updatedAt: '' },
 }
 
+/**
+ * Coleções cujo registro nasce e não muda mais.
+ *
+ * O tipo delas não tem `updatedAt` e a tabela não tem a coluna `updated_at` —
+ * um lançamento de histórico ou uma notificação não são editados, são criados
+ * e no máximo apagados. Carimbar o campo mesmo assim faz o PostgREST recusar a
+ * linha inteira com "could not find the 'updated_at' column", e como toda ação
+ * do usuário grava um registro de histórico junto, o efeito é a gravação
+ * falhar em tudo que ele faz.
+ */
+export const APPEND_ONLY_COLLECTIONS: CollectionKey[] = [
+  'leadActivities',
+  'videoRevisions',
+  'calendarEvents',
+  'activityLog',
+  'notifications',
+]
+
 /** Rótulos das coleções para a tela de configurações. */
 export const COLLECTION_LABEL: Record<CollectionKey, string> = {
   leads: 'Leads',

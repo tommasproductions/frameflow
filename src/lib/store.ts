@@ -1,5 +1,6 @@
-import { enqueue } from '@/lib/persistence'
+import { enqueue, saveAll } from '@/lib/persistence'
 import {
+  APPEND_ONLY_COLLECTIONS,
   EMPTY_DATABASE,
   SCHEMA_VERSION,
   STORAGE_KEY,
@@ -8,7 +9,7 @@ import {
 } from '@/lib/schema'
 import { VIDEO_CLOSED_STATUSES } from '@/lib/constants'
 import { buildSeedDatabase } from '@/lib/seedData'
-import { generateId, now, today } from '@/lib/utils'
+import { generateId, now, parseDate, toISODate, today } from '@/lib/utils'
 import { VideoStatus, type Video } from '@/types'
 
 /**
@@ -127,6 +128,10 @@ export type Draft<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { id?: string
 export function collection<K extends CollectionKey>(key: K, idPrefix: string) {
   type Item = Database[K][number]
 
+  // Histórico, notificações e afins não têm `updatedAt` — nem no tipo, nem na
+  // tabela. Carimbar o campo faria o banco recusar a linha inteira.
+  const appendOnly = APPEND_ONLY_COLLECTIONS.includes(key)
+
   function all(): Item[] {
     return cache[key] as Item[]
   }
@@ -141,7 +146,7 @@ export function collection<K extends CollectionKey>(key: K, idPrefix: string) {
       ...(draft as object),
       id: draft.id ?? generateId(idPrefix),
       createdAt: timestamp,
-      updatedAt: timestamp,
+      ...(appendOnly ? {} : { updatedAt: timestamp }),
     } as Item
   }
 
@@ -167,7 +172,12 @@ export function collection<K extends CollectionKey>(key: K, idPrefix: string) {
       ...db,
       [key]: (db[key] as Item[]).map((item) => {
         if ((item as StoredRecord).id !== id) return item
-        updated = { ...item, ...patch, id, updatedAt: now() } as Item
+        updated = {
+          ...item,
+          ...patch,
+          id,
+          ...(appendOnly ? {} : { updatedAt: now() }),
+        } as Item
         return updated
       }),
     }))
@@ -244,10 +254,24 @@ const videos = collection('videos', 'vid')
 function completionDateFor(
   status: VideoStatus,
   preferred: string | null | undefined,
-  current: string | null | undefined,
+  current: Video | null,
 ): string | null {
   if (!VIDEO_CLOSED_STATUSES.includes(status)) return null
-  return preferred ?? current ?? today()
+  if (preferred) return preferred
+  if (current?.completedAt) return current.completedAt
+
+  /*
+   * O vídeo já estava concluído antes de o campo existir. A data dele é a da
+   * última alteração, não a de hoje: sem isto, abrir e salvar um vídeo antigo
+   * mudaria o mês em que ele conta como receita — e o faturamento de meses
+   * fechados se mexeria sozinho a cada edição.
+   */
+  if (current && VIDEO_CLOSED_STATUSES.includes(current.status)) {
+    const last = parseDate(current.updatedAt)
+    if (last) return toISODate(last)
+  }
+
+  return today()
 }
 
 /**
@@ -281,11 +305,7 @@ export const videosStore = {
 
     return videos.update(id, {
       ...patch,
-      completedAt: completionDateFor(
-        patch.status ?? current.status,
-        patch.completedAt,
-        current.completedAt,
-      ),
+      completedAt: completionDateFor(patch.status ?? current.status, patch.completedAt, current),
     })
   },
 }
@@ -307,6 +327,17 @@ export function resetToSeed(): void {
 /** Esvazia o banco do usuário, mantendo o schema. */
 export function clearDatabase(): void {
   setDatabase(structuredClone(EMPTY_DATABASE))
+}
+
+/**
+ * Reenvia para o banco tudo que está em memória — o "salvar agora".
+ *
+ * A tela sempre mostra o estado correto; o que pode estar atrasado é o banco.
+ * Por isso a ação não recarrega nem reconstrói nada: só empurra de novo o que
+ * já está aqui.
+ */
+export function pushAll(): void {
+  saveAll(cache)
 }
 
 /** JSON formatado do banco, para backup manual. */

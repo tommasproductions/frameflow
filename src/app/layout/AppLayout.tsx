@@ -6,6 +6,8 @@ import { Topbar } from '@/app/layout/Topbar'
 import { PeriodProvider } from '@/app/period'
 import { SearchCommand } from '@/components/shared/SearchCommand'
 import { TooltipProvider } from '@/components/ui/misc'
+import { useSyncStatus } from '@/hooks/useSyncStatus'
+import { pushAll } from '@/lib/store'
 
 const COLLAPSE_KEY = 'frameflow:sidebar-collapsed'
 
@@ -20,22 +22,56 @@ export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const { pathname } = useLocation()
+  const { status: sync } = useSyncStatus()
 
   useEffect(() => {
     window.localStorage.setItem(COLLAPSE_KEY, String(collapsed))
   }, [collapsed])
 
-  // Cmd/Ctrl+K abre a busca global de qualquer tela.
+  /*
+   * Atalhos globais.
+   *
+   * Cmd/Ctrl+K abre a busca. Cmd/Ctrl+S reenvia tudo para o banco: o navegador
+   * usaria a combinação para salvar a página, que aqui não serve para nada, e
+   * é o gesto que qualquer pessoa já faz quando quer garantir que o trabalho
+   * não se perdeu.
+   */
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
+      if (!event.metaKey && !event.ctrlKey) return
+      const key = event.key.toLowerCase()
+
+      if (key === 'k') {
         event.preventDefault()
         setSearchOpen((open) => !open)
+      }
+
+      if (key === 's') {
+        event.preventDefault()
+        pushAll()
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
+
+  /*
+   * Recarregar com gravação pendente perde o que está só na tela.
+   *
+   * O navegador só deixa pedir confirmação, não escolher a mensagem — e é o
+   * suficiente: a pessoa para, fecha o diálogo e clica em salvar. Sem isto, a
+   * perda acontece em silêncio e parece que o sistema voltou sozinho para um
+   * estado antigo.
+   */
+  useEffect(() => {
+    if (sync !== 'saving' && sync !== 'error') return
+
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault()
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [sync])
 
   /**
    * No celular a sidebar não cabe ao lado do conteúdo, então o mesmo botão

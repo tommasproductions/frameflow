@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
-import { createContext, use, useEffect, useState, type ReactNode } from 'react'
+import { createContext, use, useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { loadAll, setCurrentUser } from '@/lib/persistence'
 import { clearSession, installDatabase } from '@/lib/store'
@@ -41,6 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
 
+  /*
+   * Qual usuário já teve o banco carregado.
+   *
+   * O Supabase dispara `onAuthStateChange` também na renovação do token, que
+   * acontece sozinha de tempos em tempos e quando a aba volta do segundo
+   * plano. Tratar isso como "entrou de novo" recarregava o banco e substituía
+   * o estado em memória pelo do servidor — o trabalho que ainda não tinha
+   * subido sumia da tela, como se o sistema tivesse voltado para um backup.
+   *
+   * Carregar é coisa de trocar de usuário, não de renovar credencial.
+   */
+  const loadedUserId = useRef<string | null>(null)
+
   // Uma única inscrição no Supabase resolve os dois casos: a sessão já gravada
   // no armazenamento do navegador e as trocas posteriores (login, logout,
   // renovação de token). O evento inicial chega sozinho.
@@ -59,7 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      setState(next ? 'loading-data' : 'signed-out')
+      if (!next) {
+        loadedUserId.current = null
+        setState('signed-out')
+        return
+      }
+
+      // Mesmo usuário de antes: a sessão foi só renovada, os dados continuam
+      // valendo. Recarregar aqui descartaria o que estiver por sincronizar.
+      if (loadedUserId.current === next.user.id) return
+
+      setState('loading-data')
     })
     return () => data.subscription.unsubscribe()
   }, [])
@@ -76,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((db) => {
         if (cancelled) return
         installDatabase(db)
+        loadedUserId.current = session.user.id
         setState('ready')
       })
       .catch((cause: unknown) => {

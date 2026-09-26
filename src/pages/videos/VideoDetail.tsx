@@ -47,6 +47,7 @@ import { useTasks } from '@/hooks/useTasks'
 import { useVideoRevisions } from '@/hooks/useVideoRevisions'
 import { useVideos } from '@/hooks/useVideos'
 import { logDeleted, logStatusChange, logUpdated } from '@/lib/activity'
+import { completionDate } from '@/lib/calculations'
 import { checklistProgress } from '@/lib/calculations'
 import {
   applyStatusToChecklist,
@@ -304,9 +305,7 @@ export function VideoDetail() {
           format="currency"
           icon={Wallet}
           hint={
-            video.completedAt
-              ? `concluído em ${formatDate(video.completedAt)}`
-              : 'ainda em produção'
+            closed ? `concluído em ${formatDate(completionDate(video))}` : 'ainda em produção'
           }
         />
         <MetricCard

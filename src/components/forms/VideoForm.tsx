@@ -29,6 +29,7 @@ import {
   VIDEO_TYPE_LABEL,
   toOptions,
 } from '@/lib/constants'
+import { completionDate } from '@/lib/calculations'
 import { videosStore } from '@/lib/store'
 import { formatCurrency } from '@/lib/utils'
 import { Priority, VideoStatus, VideoType, type Video } from '@/types'
@@ -75,7 +76,10 @@ function fromVideo(video: Video): VideoFormValues {
     status: video.status,
     priority: video.priority,
     deadline: video.deadline ?? '',
-    completedAt: video.completedAt ?? '',
+    // A data efetiva, não só a gravada: um vídeo concluído antes de o campo
+    // existir precisa aparecer com a data que o sistema usa para ele, senão
+    // salvar o formulário moveria a receita de mês.
+    completedAt: completionDate(video) ?? '',
     durationSeconds: video.durationSeconds?.toString() ?? '',
     value: String(video.value),
     cost: String(video.cost),

@@ -252,6 +252,35 @@ async function flush(): Promise<void> {
   }
 }
 
+/**
+ * Reenvia o banco inteiro, sem apagar nada.
+ *
+ * Existe por causa da regra logo acima: uma operação que falha três vezes é
+ * descartada para não travar a fila, e o cache em memória fica à frente do
+ * banco. Sem uma forma de reenviar, a única saída do usuário era recarregar a
+ * página — que é justamente quando o trabalho não gravado se perde.
+ *
+ * É upsert, não `replaceAll`: `replaceAll` apaga tudo antes de inserir, e uma
+ * falha no meio disso custaria exatamente os dados que se está tentando
+ * salvar. O preço é que uma exclusão que não subiu continua sem subir; perder
+ * uma exclusão é recuperável, perder o trabalho do dia não é.
+ */
+export function saveAll(db: Database): void {
+  if (!currentUserId) return
+
+  let queued = false
+  for (const key of orderedCollections()) {
+    const rows = db[key] as unknown as object[]
+    if (rows && rows.length > 0) {
+      enqueue({ kind: 'upsert', key, rows })
+      queued = true
+    }
+  }
+
+  // Banco vazio não tem o que salvar, mas o usuário pediu uma resposta.
+  if (!queued) setStatus('synced')
+}
+
 /** Espera a fila esvaziar. Usada por testes e pelo encerramento de sessão. */
 export async function waitForSync(): Promise<void> {
   while (queue.length > 0 || flushing) {

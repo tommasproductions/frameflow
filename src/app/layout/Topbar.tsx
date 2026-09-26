@@ -4,6 +4,7 @@ import { usePeriod } from '@/app/period'
 import { AccountMenu } from '@/components/shared/AccountMenu'
 import { NotificationsMenu } from '@/components/shared/NotificationsMenu'
 import { QuickActions } from '@/components/shared/QuickActions'
+import { SaveButton } from '@/components/shared/SaveButton'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -122,6 +123,7 @@ export function Topbar({
         </Button>
       </div>
 
+      <SaveButton />
       <NotificationsMenu />
       <QuickActions />
       <AccountMenu />

@@ -3,7 +3,7 @@ import {
   LEAD_OPEN_STAGES,
   VIDEO_CLOSED_STATUSES,
 } from '@/lib/constants'
-import { daysUntil, isWithinRange, monthRange, sumBy } from '@/lib/utils'
+import { daysUntil, isWithinRange, monthRange, parseDate, sumBy, toISODate } from '@/lib/utils'
 import {
   ContractStatus,
   LeadStage,
@@ -106,6 +106,22 @@ function isCompleted(video: Video): boolean {
 }
 
 /**
+ * Em que dia este vídeo entrou para a receita.
+ *
+ * `completedAt` é a resposta certa, mas nem todo vídeo concluído tem uma: os
+ * que vieram de antes do campo existir, e os de um banco onde a migração ainda
+ * não rodou, chegam sem ela. Um vídeo concluído aconteceu em algum dia — usar
+ * `updatedAt` como aproximação é a mesma coisa que a migração faz, e é
+ * preferível a devolver zero, que parece um mês sem trabalho em vez de um dado
+ * faltando. Quando a data explícita existe, ela manda.
+ */
+export function completionDate(video: Video): string | null {
+  if (video.completedAt) return video.completedAt
+  const fallback = parseDate(video.updatedAt)
+  return fallback ? toISODate(fallback) : null
+}
+
+/**
  * Os vídeos que respondem pela receita de um recorte.
  *
  * Sem `dateRange`, são todos os vídeos do escopo — a pergunta é "quanto este
@@ -119,13 +135,13 @@ export function scopedVideos(videos: Video[], filters?: ScopeFilter): Video[] {
   return videos.filter((video) => {
     if (!videoInScope(video, filters)) return false
     if (!range) return true
-    return isCompleted(video) && inRange(video.completedAt, range)
+    return isCompleted(video) && inRange(completionDate(video), range)
   })
 }
 
 /** Vídeos concluídos dentro do intervalo, na ordem em que estavam. */
 export function completedVideos(videos: Video[], range: DateRange): Video[] {
-  return videos.filter((video) => isCompleted(video) && inRange(video.completedAt, range))
+  return videos.filter((video) => isCompleted(video) && inRange(completionDate(video), range))
 }
 
 /* -------------------------------------------------------------------------- */
